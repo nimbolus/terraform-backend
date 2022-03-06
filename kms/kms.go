@@ -3,8 +3,8 @@ package kms
 import (
 	"fmt"
 
-	"github.com/nimbolus/terraform-backend/kms/localkms"
-	"github.com/nimbolus/terraform-backend/kms/vaulttransit"
+	"github.com/nimbolus/terraform-backend/kms/local"
+	"github.com/nimbolus/terraform-backend/kms/transit"
 	"github.com/nimbolus/terraform-backend/vaultclient"
 	"github.com/spf13/viper"
 )
@@ -23,11 +23,11 @@ func GetKMS() (k KMS, err error) {
 	case "local":
 		key := viper.GetString("kms_key")
 		if key == "" {
-			key, _ = localkms.GenerateKey()
+			key, _ = local.GenerateKey()
 			return nil, fmt.Errorf("no key for local KMS defined, set KMS_KEY (e.g. to this generated key: %s)", key)
 		}
 
-		k, err = localkms.NewLocalKMS(key)
+		k, err = local.NewLocalKMS(key)
 	case "vault":
 		var key string
 		keyPath := viper.GetString("kms_vault_key_path")
@@ -41,9 +41,9 @@ func GetKMS() (k KMS, err error) {
 			return nil, fmt.Errorf("failed to get key for Vault KMS: %v", err)
 		}
 
-		k, err = localkms.NewLocalKMS(key)
+		k, err = local.NewLocalKMS(key)
 	case "transit":
-		k, err = vaulttransit.NewVaultTransit(viper.GetString("kms_transit_engine"), viper.GetString("kms_transit_key"))
+		k, err = transit.NewVaultTransit(viper.GetString("kms_transit_engine"), viper.GetString("kms_transit_key"))
 	default:
 		return nil, fmt.Errorf("failed to initialize KMS backend %s: %v", backend, err)
 	}

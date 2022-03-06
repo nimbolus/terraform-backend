@@ -9,7 +9,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/nimbolus/terraform-backend/kms"
 	"github.com/nimbolus/terraform-backend/terraform"
-	"github.com/nimbolus/terraform-backend/terraform/locker"
+	"github.com/nimbolus/terraform-backend/terraform/auth"
+	"github.com/nimbolus/terraform-backend/terraform/lock"
 	"github.com/nimbolus/terraform-backend/terraform/store"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -28,7 +29,7 @@ func getStateID(req *http.Request) string {
 	return fmt.Sprintf("%x", hash[:])
 }
 
-func stateHandler(stateStore store.Store, locker locker.Locker, kms kms.KMS) func(http.ResponseWriter, *http.Request) {
+func stateHandler(stateStore store.Store, locker lock.Locker, kms kms.KMS, authenticator auth.Authenticator) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
 		defer req.Body.Close()
@@ -37,11 +38,22 @@ func stateHandler(stateStore store.Store, locker locker.Locker, kms kms.KMS) fun
 			return
 		}
 
-		state := &terraform.State{}
-		state.ID = getStateID(req)
+		state := &terraform.State{
+			ID: getStateID(req),
+		}
 
 		log.Infof("%s %s", req.Method, req.URL.Path)
 		log.Trace("request: %s %s: %s", req.Method, req.URL.Path, body)
+
+		if ok, err := authenticator.Authenticate(req, state); err != nil {
+			log.Warnf("failed to evaluate request authentication for state id %s", state.ID)
+			httpResponse(w, http.StatusBadRequest, "Authentication missing")
+			return
+		} else if !ok {
+			log.Warnf("failed to authenticate request for state id %s", state.ID)
+			httpResponse(w, http.StatusBadRequest, "Permission denied")
+			return
+		}
 
 		switch req.Method {
 		case "LOCK":
@@ -76,9 +88,10 @@ func stateHandler(stateStore store.Store, locker locker.Locker, kms kms.KMS) fun
 			return
 		case http.MethodGet:
 			log.Debugf("get state with id %s", state.ID)
+			stateID := state.ID
 			state, err = stateStore.GetState(state.ID)
 			if err != nil {
-				log.Warnf("failed to get state with id %s: %v", state.ID, err)
+				log.Warnf("failed to get state with id %s: %v", stateID, err)
 				httpResponse(w, http.StatusBadRequest, err.Error())
 				return
 			}
@@ -126,12 +139,9 @@ func stateHandler(stateStore store.Store, locker locker.Locker, kms kms.KMS) fun
 }
 
 func main() {
+	viper.AutomaticEnv()
 	viper.SetDefault("log_level", "info")
 	viper.SetDefault("listen_addr", ":8080")
-	viper.SetDefault("store_backend", "file")
-	viper.SetDefault("lock_backend", "local")
-	viper.SetDefault("kms_backend", "local")
-	viper.AutomaticEnv()
 
 	level, err := log.ParseLevel(viper.GetString("log_level"))
 	if err != nil {
@@ -140,78 +150,33 @@ func main() {
 	log.Infof("set log level to %s", level.String())
 	log.SetLevel(level)
 
-	// var stateStore terraform.Store
-	// switch viper.GetString("store_backend") {
-	// case "file":
-	// 	stateStore, err = filestore.NewFileStore("./example/states")
-	// default:
-	// 	log.Fatalf("failed to initialize lock backend: %s is unknown", viper.GetString("store_backend"))
-	// }
-
-	// var locker locker.Locker
-	// switch viper.GetString("lock_backend") {
-	// case "redis":
-	// 	log.Println("initializing Redis lock")
-	// 	locker = redislock.NewRedisLock()
-	// case "local":
-	// 	log.Println("initializing local lock")
-	// 	locker = locallock.NewLocalLock()
-	// default:
-	// 	log.Fatalf("failed to initialize lock backend: %s is unknown", viper.GetString("lock_backend"))
-	// }
-
-	// var kms kms.KMS
-	// switch viper.GetString("kms_backend") {
-	// case "transit":
-	// 	log.Println("initializing Vault Transit KMS")
-	// 	kms, err = vaulttransit.NewVaultTransit(viper.GetString("kms_transit_engine"), viper.GetString("kms_transit_key"))
-	// case "local":
-	// 	var key string
-	// 	if keyPath := viper.GetString("kms_vault_key_path"); keyPath != "" {
-	// 		log.Infof("initializing local KMS with key from Vault K/V engine")
-	// 		vaultClient, err := vaultclient.NewVaultClient()
-	// 		if err != nil {
-	// 			log.Fatalf("failed to setup Vault client for local KMS: %v", err)
-	// 		}
-
-	// 		key, err = vaultclient.GetKvValue(vaultClient, keyPath, "key")
-	// 		if err != nil {
-	// 			log.Fatalf("failed to get key for local KMS from Vault: %v", err)
-	// 		}
-	// 	} else {
-	// 		log.Infof("initializing local KMS with key from environment")
-	// 		if key = viper.GetString("kms_key"); key == "" {
-	// 			key, _ = simplekms.GenerateKey()
-	// 			log.Printf("No key defined. Set KMS_KEY to this generated key: %s", key)
-	// 			return
-	// 		}
-	// 	}
-	// 	kms, err = simplekms.NewSimpleKMS(key)
-	// default:
-	// 	log.Fatalf("failed to initialize KMS backend %s: %s is unknown", viper.GetString("kms_backend"), viper.GetString("kms_backend"))
-	// }
-
 	stateStore, err := store.GetStore()
 	if err != nil {
-		log.Fatalf("failed to initialize store backend: %v", err)
+		log.Fatal(err.Error())
 	}
 	log.Infof("initialized %s store backend", stateStore.GetName())
 
-	locker, err := locker.GetLocker()
+	locker, err := lock.GetLocker()
 	if err != nil {
-		log.Fatalf("failed to initialize lock backend: %v", err)
+		log.Fatal(err.Error())
 	}
 	log.Infof("initialized %s lock backend", locker.GetName())
 
 	kms, err := kms.GetKMS()
 	if err != nil {
-		log.Fatalf("failed to initialize KMS backend: %v", err)
+		log.Fatal(err.Error())
 	}
 	log.Infof("initialized %s KMS backend", kms.GetName())
+
+	authenticator, err := auth.GetAuthenticator()
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	log.Infof("initialized %s auth backend", authenticator.GetName())
 
 	addr := viper.GetString("listen_addr")
 	log.Printf("listening on %s", addr)
 	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/state/{project}/{id}", stateHandler(stateStore, locker, kms))
+	r.HandleFunc("/state/{project}/{id}", stateHandler(stateStore, locker, kms, authenticator))
 	log.Fatalf("failed to listen on %s: %v", addr, http.ListenAndServe(addr, r))
 }

@@ -1,4 +1,4 @@
-package redislock
+package redis
 
 import (
 	"context"

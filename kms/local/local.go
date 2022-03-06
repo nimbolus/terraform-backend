@@ -1,4 +1,4 @@
-package localkms
+package local
 
 import (
 	"crypto/aes"

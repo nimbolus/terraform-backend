@@ -1,4 +1,4 @@
-package vaulttransit
+package transit
 
 import (
 	"encoding/base64"

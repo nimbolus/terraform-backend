@@ -1,4 +1,4 @@
-package locallock
+package local
 
 import (
 	"fmt"

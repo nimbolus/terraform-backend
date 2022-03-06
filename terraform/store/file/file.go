@@ -1,4 +1,4 @@
-package filestore
+package file
 
 import (
 	"errors"
@@ -15,7 +15,7 @@ type FileStore struct {
 func NewFileStore(directory string) (*FileStore, error) {
 	err := os.MkdirAll(directory, 0700)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create file store at %s: %v", directory, err)
+		return nil, fmt.Errorf("failed to create directory %s: %v", directory, err)
 	}
 
 	return &FileStore{
