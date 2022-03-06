@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,14 +21,7 @@ func httpResponse(w http.ResponseWriter, code int, body string) {
 	fmt.Fprint(w, body)
 }
 
-func getStateID(req *http.Request) string {
-	vars := mux.Vars(req)
-	id := fmt.Sprintf("%s-%s", vars["id"], vars["project"])
-	hash := sha256.Sum256([]byte(id))
-	return fmt.Sprintf("%x", hash[:])
-}
-
-func stateHandler(stateStore store.Store, locker lock.Locker, kms kms.KMS, authenticator auth.Authenticator) func(http.ResponseWriter, *http.Request) {
+func stateHandler(stateStore store.Store, locker lock.Locker, kms kms.KMS) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
 		defer req.Body.Close()
@@ -38,20 +30,21 @@ func stateHandler(stateStore store.Store, locker lock.Locker, kms kms.KMS, authe
 			return
 		}
 
+		vars := mux.Vars(req)
 		state := &terraform.State{
-			ID: getStateID(req),
+			ID: terraform.GetStateID(vars["project"], vars["id"]),
 		}
 
 		log.Infof("%s %s", req.Method, req.URL.Path)
 		log.Trace("request: %s %s: %s", req.Method, req.URL.Path, body)
 
-		if ok, err := authenticator.Authenticate(req, state); err != nil {
-			log.Warnf("failed to evaluate request authentication for state id %s", state.ID)
-			httpResponse(w, http.StatusBadRequest, "Authentication missing")
+		if ok, err := auth.Authenticate(req, state); err != nil {
+			log.Warnf("failed process authentication for state id %s: %v", state.ID, err)
+			httpResponse(w, http.StatusForbidden, err.Error())
 			return
 		} else if !ok {
 			log.Warnf("failed to authenticate request for state id %s", state.ID)
-			httpResponse(w, http.StatusBadRequest, "Permission denied")
+			httpResponse(w, http.StatusForbidden, "Permission denied")
 			return
 		}
 
@@ -168,15 +161,9 @@ func main() {
 	}
 	log.Infof("initialized %s KMS backend", kms.GetName())
 
-	authenticator, err := auth.GetAuthenticator()
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	log.Infof("initialized %s auth backend", authenticator.GetName())
-
 	addr := viper.GetString("listen_addr")
 	log.Printf("listening on %s", addr)
 	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/state/{project}/{id}", stateHandler(stateStore, locker, kms, authenticator))
+	r.HandleFunc("/state/{project}/{id}", stateHandler(stateStore, locker, kms))
 	log.Fatalf("failed to listen on %s: %v", addr, http.ListenAndServe(addr, r))
 }
