@@ -10,7 +10,7 @@ import (
 	"github.com/nimbolus/terraform-backend/terraform"
 	"github.com/nimbolus/terraform-backend/terraform/auth"
 	"github.com/nimbolus/terraform-backend/terraform/lock"
-	"github.com/nimbolus/terraform-backend/terraform/store"
+	"github.com/nimbolus/terraform-backend/terraform/storage"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 )
@@ -21,7 +21,7 @@ func httpResponse(w http.ResponseWriter, code int, body string) {
 	fmt.Fprint(w, body)
 }
 
-func stateHandler(stateStore store.Store, locker lock.Locker, kms kms.KMS) func(http.ResponseWriter, *http.Request) {
+func stateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
 		defer req.Body.Close()
@@ -82,7 +82,7 @@ func stateHandler(stateStore store.Store, locker lock.Locker, kms kms.KMS) func(
 		case http.MethodGet:
 			log.Debugf("get state with id %s", state.ID)
 			stateID := state.ID
-			state, err = stateStore.GetState(state.ID)
+			state, err = store.GetState(state.ID)
 			if err != nil {
 				log.Warnf("failed to get state with id %s: %v", stateID, err)
 				httpResponse(w, http.StatusBadRequest, err.Error())
@@ -110,7 +110,7 @@ func stateHandler(stateStore store.Store, locker lock.Locker, kms kms.KMS) func(
 				return
 			}
 
-			err := stateStore.SaveState(state)
+			err := store.SaveState(state)
 			if err != nil {
 				log.Warnf("failed to save state with id %s: %v", state.ID, err)
 				httpResponse(w, http.StatusBadRequest, err.Error())
@@ -143,11 +143,11 @@ func main() {
 	log.Infof("set log level to %s", level.String())
 	log.SetLevel(level)
 
-	stateStore, err := store.GetStore()
+	store, err := storage.GetStorage()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	log.Infof("initialized %s store backend", stateStore.GetName())
+	log.Infof("initialized %s storage backend", store.GetName())
 
 	locker, err := lock.GetLocker()
 	if err != nil {
@@ -164,6 +164,6 @@ func main() {
 	addr := viper.GetString("listen_addr")
 	log.Printf("listening on %s", addr)
 	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/state/{project}/{id}", stateHandler(stateStore, locker, kms))
+	r.HandleFunc("/state/{project}/{id}", stateHandler(store, locker, kms))
 	log.Fatalf("failed to listen on %s: %v", addr, http.ListenAndServe(addr, r))
 }

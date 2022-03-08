@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	vault "github.com/hashicorp/vault/api"
-	"github.com/nimbolus/terraform-backend/vaultclient"
+	vaultclient "github.com/nimbolus/terraform-backend/client/vault"
 )
 
 type VaultTransit struct {

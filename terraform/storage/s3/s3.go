@@ -10,12 +10,12 @@ import (
 	"github.com/nimbolus/terraform-backend/terraform"
 )
 
-type S3Store struct {
+type S3Storage struct {
 	client *minio.Client
 	bucket string
 }
 
-func NewS3Store(endpoint, bucket, accessKey, secretKey string, useSSL bool) (*S3Store, error) {
+func NewS3Storage(endpoint, bucket, accessKey, secretKey string, useSSL bool) (*S3Storage, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
@@ -30,17 +30,17 @@ func NewS3Store(endpoint, bucket, accessKey, secretKey string, useSSL bool) (*S3
 		return nil, fmt.Errorf("bucket does not exist")
 	}
 
-	return &S3Store{
+	return &S3Storage{
 		client: client,
 		bucket: bucket,
 	}, nil
 }
 
-func (s *S3Store) GetName() string {
+func (s *S3Storage) GetName() string {
 	return "s3"
 }
 
-func (s *S3Store) SaveState(state *terraform.State) error {
+func (s *S3Storage) SaveState(state *terraform.State) error {
 	r := bytes.NewReader(state.Data)
 	_, err := s.client.PutObject(context.Background(), s.bucket, getObjectName(state.ID), r, r.Size(), minio.PutObjectOptions{
 		ContentType: "application/octet-stream",
@@ -48,7 +48,7 @@ func (s *S3Store) SaveState(state *terraform.State) error {
 	return err
 }
 
-func (s *S3Store) GetState(id string) (*terraform.State, error) {
+func (s *S3Storage) GetState(id string) (*terraform.State, error) {
 	state := &terraform.State{
 		ID: id,
 	}

@@ -1,4 +1,4 @@
-package vaultclient
+package vault
 
 import (
 	"fmt"

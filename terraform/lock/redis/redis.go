@@ -9,7 +9,7 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis"
 	goredis "github.com/go-redsync/redsync/v4/redis/goredis/v8"
-	"github.com/nimbolus/terraform-backend/redisclient"
+	redisclient "github.com/nimbolus/terraform-backend/client/redis"
 	"github.com/nimbolus/terraform-backend/terraform"
 )
 

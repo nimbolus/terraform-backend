@@ -3,9 +3,9 @@ package kms
 import (
 	"fmt"
 
+	vaultclient "github.com/nimbolus/terraform-backend/client/vault"
 	"github.com/nimbolus/terraform-backend/kms/local"
 	"github.com/nimbolus/terraform-backend/kms/transit"
-	"github.com/nimbolus/terraform-backend/vaultclient"
 	"github.com/spf13/viper"
 )
 
