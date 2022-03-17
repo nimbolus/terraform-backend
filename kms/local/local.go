@@ -4,7 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"encoding/hex"
+	"encoding/base64"
 	"fmt"
 	"io"
 )
@@ -30,7 +30,7 @@ func GenerateKey() (string, error) {
 		return "", fmt.Errorf("failed to create key for local KMS: %v", err)
 	}
 
-	return hex.EncodeToString(bytes), nil
+	return base64.StdEncoding.EncodeToString(bytes), nil
 }
 
 func (v *LocalKMS) GetName() string {
@@ -59,7 +59,7 @@ func (s *LocalKMS) Decrypt(d []byte) ([]byte, error) {
 }
 
 func buildCipher(key string) (cipher.AEAD, error) {
-	k, err := hex.DecodeString(key)
+	k, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create simple KMS key: %v", err)
 	}
