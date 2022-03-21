@@ -2,6 +2,8 @@
 
 A state backend server which implements the Terraform HTTP backend API with plugable modules for authentication, storage, locking and state encryption.
 
+> :warning: **Disclaimer**: This code is in an early development state and not tested extensively for bugs and security issues. If you find some, please raise an issue or merge request.
+
 Supported authentication methods:
 - HTTP basic auth
 - JSON Web Tokens
@@ -18,9 +20,6 @@ Supported KMS (encryption) backends:
 - local AES key
 - AES from HashiCorp Vault Key/Value store (v2)
 - HashiCorp Vault Transit engine
-
-**Disclaimer**
-This code is in an early development state and not tested extensively for bugs and security issues. If you find some, please raise an issue or merge request.
 
 ## Deployment
 
