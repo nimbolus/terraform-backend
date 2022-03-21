@@ -169,5 +169,6 @@ func main() {
 	log.Printf("listening on %s", addr)
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/state/{project}/{id}", stateHandler(store, locker, kms))
+	r.HandleFunc("/health", healthHandler)
 	log.Fatalf("failed to listen on %s: %v", addr, http.ListenAndServe(addr, r))
 }
