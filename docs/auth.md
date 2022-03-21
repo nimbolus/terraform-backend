@@ -6,7 +6,7 @@ The authentication method is defined by the HTTP basic auth username, therefore 
 
 This authentication creates a hash value of provided HTTP basic auth password and state path to get the filename of the state. Therefore only the right combination of state path and password can fetch this exact state again. It's really simple to setup, no user or credential management required. The drawback is that the server can be used by everyone, who has access to the API endpoint, so it should only be used in secure or testing environments.
 
-**Config**
+### Config
 | Environment Variable | Type | Example | Description                                                                                     |
 |----------------------|------|---------|-------------------------------------------------------------------------------------------------|
 | AUTH_BASIC_ENABLED   | bool | `true`  | HTTP basic auth is enabled by default (checkout [docs/auth.md](docs/auth.md) for other options) |
@@ -38,7 +38,7 @@ JWT allow granting access to a state for a given time (the token lifetime). The 
 }
 ```
 
-**Config**
+### Config
 | Environment Variable     | Type | Example                                      | Description                                                                       |
 |--------------------------|------|----------------------------------------------|-----------------------------------------------------------------------------------|
 | AUTH_JWT_OIDC_ISSUER_URL | bool | `https://vault.example.com/v1/identity/oidc` | Issuer URL which is used to validate token (if not defined, JWT auth is disabled) |

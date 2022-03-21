@@ -8,7 +8,7 @@ NOTE: The state path is always hashed, so getting the state name of project from
 
 This backend saves the state file to a local directory.
 
-**Config**
+### Config
 Set `STORAGE_BACKEND` to `fs`.
 
 | Environment Variable | Type   | Default    | Description                          |
@@ -19,7 +19,7 @@ Set `STORAGE_BACKEND` to `fs`.
 
 The S3 backend stores the state files in any S3-compatible object store using the [MinIO SDK](https://docs.min.io/docs/golang-client-quickstart-guide.html). Since locking is handled by the Terraform backend server separately, the S3 API doesn't need support for write-once-read-many (WORM).
 
-**Config**
+### Config
 Set `STORAGE_BACKEND` to `fs`.
 
 | Environment Variable  | Type   | Default            | Description             |
