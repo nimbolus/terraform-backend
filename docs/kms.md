@@ -37,9 +37,9 @@ For preparing the disaster recovery, the [Transit key can be exported](https://w
 ### Config
 Set `KMS_BACKEND` to `transit`.
 
-| Environment Variable | Type   | Example   | Description                                      |
-|----------------------|--------|-----------|--------------------------------------------------|
-| KMS_TRANSIT_ENGINE   | string | `transit` | Name (mount point) of the Transit secrets engine |
-| KMS_TRANSIT_KEY      | string | `transit` | Name of the Transit key                          |
+| Environment Variable | Type   | Example             | Description                                      |
+|----------------------|--------|---------------------|--------------------------------------------------|
+| KMS_TRANSIT_ENGINE   | string | `transit`           | Name (mount point) of the Transit secrets engine |
+| KMS_TRANSIT_KEY      | string | `terraform-backend` | Name of the Transit key                          |
 
 Make sure that `VAULT_ADDR` and `VAULT_TOKEN` are set properly (see [Vault Environment Variables](https://www.vaultproject.io/docs/commands#environment-variables) for more information).
