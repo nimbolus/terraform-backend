@@ -1,0 +1,25 @@
+version: "3"
+
+services:
+  terraform_backend:
+    image: ghcr.io/nimbolus/terraform-backend
+    build: .
+    environment:
+      STORAGE_FS_DIR: /states
+      # change the key before using the backend
+      KMS_KEY: jwS6UpASMOWpEmFn7C6I47BlmPt4cpdmYLKd2E7a4Zk=
+      REDIS_ADDR: redis:6379
+      LOCK_BACKEND: redis
+    ports:
+      - "8080:8080"
+    volumes:
+      - states:/states
+    links:
+      - redis
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  states:
