@@ -131,6 +131,10 @@ func stateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 	}
 }
 
+func healthHandler(w http.ResponseWriter, req *http.Request) {
+	httpResponse(w, http.StatusOK, "")
+}
+
 func main() {
 	viper.AutomaticEnv()
 	viper.SetDefault("log_level", "info")
