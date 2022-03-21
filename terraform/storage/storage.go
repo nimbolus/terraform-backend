@@ -26,8 +26,6 @@ func GetStorage() (s Storage, err error) {
 	case "s3":
 		viper.SetDefault("storage_s3_endpoint", "s3.amazonaws.com")
 		viper.SetDefault("storage_s3_use_ssl", true)
-		viper.SetDefault("storage_s3_access_key", "access-key-id")
-		viper.SetDefault("storage_s3_secret_key", "secret-access-key")
 		viper.SetDefault("storage_s3_bucket", "terraform-state")
 
 		endpoint := viper.GetString("storage_s3_endpoint")
