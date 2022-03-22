@@ -41,6 +41,8 @@ The following table describes the default configuration, although the backend se
 |----------------------|--------|------------|---------------------------------------------------------------------------------------------------|
 | LOG_LEVEL            | string | `info`     | Log level (options are: `fatal`, `info`, `warning`, `debug`, `trace`)                             |
 | LISTEN_ADDR          | string | `:8080`    | Address the HTTP server listens on                                                                |
+| TLS_KEY              | string | --         | Path to TLS key file for listening with TLS (fallback to HTTP if not specified)                 |
+| TLS_CERT             | string | --         | Path to TLS certificate file for listening with TLS (fallback to HTTP if not specified)         |
 | STORAGE_BACKEND      | string | `fs`       | Module for state file storage (checkout [docs/storage.md](./docs/storage.md) for other options)   |
 | STORAGE_FS_DIR       | string | `./states` | File system directory for `fs` storage module to store state files                                |
 | KMS_BACKEND          | string | `local`    | Module used for encryption (checkout [docs/kms.md](./docs/kms.md) for other options)              |

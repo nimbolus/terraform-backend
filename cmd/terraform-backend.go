@@ -132,13 +132,13 @@ func stateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 }
 
 func healthHandler(w http.ResponseWriter, req *http.Request) {
+	log.Infof("%s %s", req.Method, req.URL.Path)
 	httpResponse(w, http.StatusOK, "")
 }
 
 func main() {
 	viper.AutomaticEnv()
 	viper.SetDefault("log_level", "info")
-	viper.SetDefault("listen_addr", ":8080")
 
 	level, err := log.ParseLevel(viper.GetString("log_level"))
 	if err != nil {
@@ -165,10 +165,21 @@ func main() {
 	}
 	log.Infof("initialized %s KMS backend", kms.GetName())
 
+	viper.SetDefault("listen_addr", ":8080")
 	addr := viper.GetString("listen_addr")
-	log.Printf("listening on %s", addr)
+	tlsKey := viper.GetString("tls_key")
+	tlsCert := viper.GetString("tls_cert")
+
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/state/{project}/{id}", stateHandler(store, locker, kms))
 	r.HandleFunc("/health", healthHandler)
-	log.Fatalf("failed to listen on %s: %v", addr, http.ListenAndServe(addr, r))
+
+	if tlsKey != "" && tlsCert != "" {
+		log.Printf("listening on %s with tls", addr)
+		err = http.ListenAndServeTLS(addr, tlsCert, tlsKey, r)
+	} else {
+		log.Printf("listening on %s", addr)
+		err = http.ListenAndServe(addr, r)
+	}
+	log.Fatalf("failed to listen on %s: %v", addr, err)
 }
