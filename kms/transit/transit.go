@@ -4,24 +4,21 @@ import (
 	"encoding/base64"
 	"fmt"
 
-	vault "github.com/hashicorp/vault/api"
 	vaultclient "github.com/nimbolus/terraform-backend/client/vault"
 )
 
 type VaultTransit struct {
-	client *vault.Client
 	engine string
 	key    string
 }
 
 func NewVaultTransit(engine string, key string) (*VaultTransit, error) {
-	client, err := vaultclient.NewVaultClient()
+	_, err := vaultclient.NewVaultClient()
 	if err != nil {
 		return nil, fmt.Errorf("failed to create vault transit client: %v", err)
 	}
 
 	return &VaultTransit{
-		client: client,
 		engine: engine,
 		key:    key,
 	}, nil
@@ -32,11 +29,16 @@ func (v *VaultTransit) GetName() string {
 }
 
 func (v *VaultTransit) Encrypt(d []byte) ([]byte, error) {
+	client, err := vaultclient.NewVaultClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create vault transit client: %v", err)
+	}
+
 	params := map[string]interface{}{
 		"plaintext": base64.StdEncoding.EncodeToString(d),
 	}
 	path := fmt.Sprintf("%s/encrypt/%s", v.engine, v.key)
-	res, err := v.client.Logical().Write(path, params)
+	res, err := client.Logical().Write(path, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to seal with transit engine: %v", err)
 	}
@@ -50,11 +52,16 @@ func (v *VaultTransit) Encrypt(d []byte) ([]byte, error) {
 }
 
 func (v *VaultTransit) Decrypt(d []byte) ([]byte, error) {
+	client, err := vaultclient.NewVaultClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create vault transit client: %v", err)
+	}
+
 	params := map[string]interface{}{
 		"ciphertext": string(d),
 	}
 	path := fmt.Sprintf("%s/decrypt/%s", v.engine, v.key)
-	res, err := v.client.Logical().Write(path, params)
+	res, err := client.Logical().Write(path, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal with transit engine: %v", err)
 	}

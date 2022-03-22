@@ -26,7 +26,7 @@ Set `KMS_BACKEND` to `vault`.
 |----------------------|--------|-----------------------------|------------------------|
 | KMS_VAULT_KEY_PATH   | string | `kv/data/terraform-backend` | Path of the key secret |
 
-Make sure that `VAULT_ADDR` and `VAULT_TOKEN` are set properly (see [Vault Environment Variables](https://www.vaultproject.io/docs/commands#environment-variables) for more information).
+Make sure that the [Vault client](clients.md#vault-client) is set up properly.
 
 ## Vault Transit Secrets Engine
 
@@ -42,4 +42,4 @@ Set `KMS_BACKEND` to `transit`.
 | KMS_TRANSIT_ENGINE   | string | `transit`           | Name (mount point) of the Transit secrets engine |
 | KMS_TRANSIT_KEY      | string | `terraform-backend` | Name of the Transit key                          |
 
-Make sure that `VAULT_ADDR` and `VAULT_TOKEN` are set properly (see [Vault Environment Variables](https://www.vaultproject.io/docs/commands#environment-variables) for more information).
+Make sure that the [Vault client](clients.md#vault-client) is set up properly.

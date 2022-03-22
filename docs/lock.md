@@ -16,4 +16,4 @@ This backend uses a external Redis server to lock the states. It's scalable and 
 ### Config
 Set `LOCK_BACKEND` to `redis`.
 
-Make sure that `REDIS_ADDR` is set properly (e.g. to `localhost:6379` for a local Redis instance). Optionally `REDIS_PASSWORD` can be set also.
+Make sure that the [Redis client](clients.md#redis-client) is set up properly.

@@ -2,14 +2,21 @@ package vault
 
 import (
 	"fmt"
+	"io/ioutil"
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/spf13/viper"
 )
 
+const (
+	k8sServiceAccountFile = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+)
+
 func NewVaultClient() (*vault.Client, error) {
 	config := vault.DefaultConfig()
-	config.Address = viper.GetString("vault_addr")
+	if config.Address = viper.GetString("vault_addr"); config.Address == "" {
+		return nil, fmt.Errorf("unable to initialize vault client: no vault address defined")
+	}
 
 	client, err := vault.NewClient(config)
 	if err != nil {
@@ -18,6 +25,24 @@ func NewVaultClient() (*vault.Client, error) {
 
 	if token := viper.GetString("vault_token"); token != "" {
 		client.SetToken(token)
+	} else if role := viper.GetString("vault_kube_auth_role"); role != "" {
+		jwt, err := ioutil.ReadFile(k8sServiceAccountFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read k8s service account: %v", err)
+		}
+
+		viper.SetDefault("vault_kube_auth_name", "kubernetes")
+		path := fmt.Sprintf("auth/%s/login", viper.GetString("vault_kube_auth_name"))
+		params := map[string]interface{}{
+			"jwt":  string(jwt),
+			"role": role,
+		}
+		secret, err := client.Logical().Write(path, params)
+		if err != nil {
+			return nil, fmt.Errorf("failed to login with k8s service account: %v", err)
+		}
+
+		client.SetToken(secret.Auth.ClientToken)
 	} else {
 		return nil, fmt.Errorf("unable to initialize vault client: no login method found")
 	}
