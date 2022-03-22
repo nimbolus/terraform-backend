@@ -132,7 +132,7 @@ func stateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 }
 
 func healthHandler(w http.ResponseWriter, req *http.Request) {
-	log.Infof("%s %s", req.Method, req.URL.Path)
+	log.Debugf("%s %s", req.Method, req.URL.Path)
 	httpResponse(w, http.StatusOK, "")
 }
 
