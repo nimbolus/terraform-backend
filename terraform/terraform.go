@@ -6,9 +6,11 @@ import (
 )
 
 type State struct {
-	ID   string
-	Data []byte
-	Lock []byte
+	ID      string
+	Data    []byte
+	Lock    []byte
+	Project string
+	Name    string
 }
 
 func GetStateID(project, id string) string {

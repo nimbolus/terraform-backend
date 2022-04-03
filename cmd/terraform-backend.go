@@ -32,7 +32,9 @@ func stateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 
 		vars := mux.Vars(req)
 		state := &terraform.State{
-			ID: terraform.GetStateID(vars["project"], vars["id"]),
+			ID:      terraform.GetStateID(vars["project"], vars["name"]),
+			Project: vars["project"],
+			Name:    vars["name"],
 		}
 
 		log.Infof("%s %s", req.Method, req.URL.Path)
@@ -171,7 +173,7 @@ func main() {
 	tlsCert := viper.GetString("tls_cert")
 
 	r := mux.NewRouter().StrictSlash(true)
-	r.HandleFunc("/state/{project}/{id}", stateHandler(store, locker, kms))
+	r.HandleFunc("/state/{project}/{name}", stateHandler(store, locker, kms))
 	r.HandleFunc("/health", healthHandler)
 
 	if tlsKey != "" && tlsCert != "" {
