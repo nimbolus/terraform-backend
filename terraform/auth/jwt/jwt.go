@@ -46,8 +46,9 @@ func (b *JWTAuth) Authenticate(secret string, s *terraform.State) (bool, error) 
 		return false, err
 	}
 
-	tokenID := terraform.GetStateID(claims.TerraformBackend.Project, claims.TerraformBackend.State)
-	if s.ID == tokenID {
+	if s.Project == claims.TerraformBackend.Project && claims.TerraformBackend.State == "*" {
+		return true, nil
+	} else if s.Project == claims.TerraformBackend.Project && s.Name == claims.TerraformBackend.State {
 		return true, nil
 	}
 

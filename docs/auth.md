@@ -38,6 +38,8 @@ JWT allow granting access to a state for a given time (the token lifetime). The 
 }
 ```
 
+NOTE: `state` value can be set to `*` to allow accessing all project states
+
 ### Config
 | Environment Variable     | Type | Example                                      | Description                                                                       |
 |--------------------------|------|----------------------------------------------|-----------------------------------------------------------------------------------|
