@@ -58,5 +58,6 @@ func (l *LocalLock) Unlock(s *terraform.State) (bool, error) {
 	}
 
 	delete(l.db, s.ID)
+
 	return true, nil
 }
