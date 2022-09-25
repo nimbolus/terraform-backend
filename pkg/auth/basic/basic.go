@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 
-	"github.com/nimbolus/terraform-backend/terraform"
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type BasicAuth struct{}

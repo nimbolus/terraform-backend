@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/nimbolus/terraform-backend/terraform"
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type FileSystemStorage struct {

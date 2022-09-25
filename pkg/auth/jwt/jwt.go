@@ -4,7 +4,8 @@ import (
 	"context"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/nimbolus/terraform-backend/terraform"
+
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type JWTAuth struct {

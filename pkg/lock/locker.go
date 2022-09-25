@@ -3,10 +3,11 @@ package lock
 import (
 	"fmt"
 
-	"github.com/nimbolus/terraform-backend/terraform"
-	"github.com/nimbolus/terraform-backend/terraform/lock/local"
-	"github.com/nimbolus/terraform-backend/terraform/lock/redis"
 	"github.com/spf13/viper"
+
+	"github.com/nimbolus/terraform-backend/pkg/lock/local"
+	"github.com/nimbolus/terraform-backend/pkg/lock/redis"
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type Locker interface {
