@@ -7,6 +7,7 @@ import (
 
 	"github.com/nimbolus/terraform-backend/pkg/lock"
 	"github.com/nimbolus/terraform-backend/pkg/lock/local"
+	"github.com/nimbolus/terraform-backend/pkg/lock/postgres"
 	"github.com/nimbolus/terraform-backend/pkg/lock/redis"
 )
 
@@ -19,6 +20,8 @@ func GetLocker() (l lock.Locker, err error) {
 		l = local.NewLock()
 	case "redis":
 		l = redis.NewLock()
+	case "postgres":
+		l, err = postgres.NewLock()
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}

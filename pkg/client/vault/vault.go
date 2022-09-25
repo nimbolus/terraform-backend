@@ -20,7 +20,7 @@ func NewVaultClient() (*vault.Client, error) {
 
 	client, err := vault.NewClient(config)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize vault client: %v", err)
+		return nil, fmt.Errorf("unable to initialize vault client: %w", err)
 	}
 
 	if token := viper.GetString("vault_token"); token != "" {
@@ -28,7 +28,7 @@ func NewVaultClient() (*vault.Client, error) {
 	} else if role := viper.GetString("vault_kube_auth_role"); role != "" {
 		jwt, err := ioutil.ReadFile(k8sServiceAccountFile)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read k8s service account: %v", err)
+			return nil, fmt.Errorf("failed to read k8s service account: %w", err)
 		}
 
 		viper.SetDefault("vault_kube_auth_name", "kubernetes")
@@ -39,7 +39,7 @@ func NewVaultClient() (*vault.Client, error) {
 		}
 		secret, err := client.Logical().Write(path, params)
 		if err != nil {
-			return nil, fmt.Errorf("failed to login with k8s service account: %v", err)
+			return nil, fmt.Errorf("failed to login with k8s service account: %w", err)
 		}
 
 		client.SetToken(secret.Auth.ClientToken)

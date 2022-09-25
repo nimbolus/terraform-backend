@@ -11,9 +11,18 @@ Set `LOCK_BACKEND` to `local`.
 
 ## Redis
 
-This backend uses a external Redis server to lock the states. It's scalable and can be used also with multiple Terraform backend server instances.
+This backend uses an external Redis server to lock the states. It's scalable and can be used also with multiple Terraform backend server instances.
 
 ### Config
 Set `LOCK_BACKEND` to `redis`.
 
 Make sure that the [Redis client](clients.md#redis-client) is set up properly.
+
+## Postgres
+
+This backend uses an external Postgres server to lock the states. It's scalable and can be used also with multiple Terraform backend server instances.
+
+### Config
+Set `LOCK_BACKEND` to `postgres`.
+
+Make sure that the [Postgres client](clients.md#postgres-client) is set up properly.

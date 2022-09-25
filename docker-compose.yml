@@ -20,6 +20,12 @@ services:
     image: redis:alpine
     ports:
       - "6379:6379"
+  postgres:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
 
 volumes:
   states:

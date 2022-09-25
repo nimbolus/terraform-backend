@@ -21,3 +21,13 @@ This client handles Redis requests.
 |----------------------|--------|------------------|-----------------------------------------|
 | REDIS_ADDR           | string | `localhost:6379` | Host and port of the Redis instance     |
 | REDIS_PASSWORD       | string | --               | An optional password for authentication |
+
+## Postgres Client
+
+This client handles Redis requests.
+
+**Config**
+| Environment Variable | Type   | Default                                                                | Description                                                      |
+|----------------------|--------|------------------------------------------------------------------------|------------------------------------------------------------------|
+| POSTGRES_CONNECTION  | string | `postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable` | Host and port of the Postgres instance                           |
+| POSTGRES_LOCKS_TABLE | string | `locks`                                                                | The table name used by `LOCK_BACKEND=postgres` for storing locks |
