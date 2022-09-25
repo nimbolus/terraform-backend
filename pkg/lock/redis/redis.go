@@ -21,28 +21,28 @@ import (
 
 const lockKey = "terraform-backend-state-lock"
 
-type RedisLock struct {
+type Lock struct {
 	pool   *redigo.Pool
 	rsPool redis.Pool
 	client *redsync.Redsync
 }
 
-func NewRedisLock() *RedisLock {
+func NewLock() *Lock {
 	pool := redisclient.NewPool()
 	rsPool := rsredigo.NewPool(pool)
 
-	return &RedisLock{
+	return &Lock{
 		pool:   pool,
 		rsPool: rsPool,
 		client: redsync.New(rsPool),
 	}
 }
 
-func (r *RedisLock) GetName() string {
+func (r *Lock) GetName() string {
 	return "redis"
 }
 
-func (r *RedisLock) Lock(s *terraform.State) (locked bool, err error) {
+func (r *Lock) Lock(s *terraform.State) (locked bool, err error) {
 	mutex := r.client.NewMutex(lockKey, redsync.WithExpiry(12*time.Hour), redsync.WithTries(1), redsync.WithGenValueFunc(func() (string, error) {
 		return uuid.New().String(), nil
 	}))
@@ -92,7 +92,7 @@ func (r *RedisLock) Lock(s *terraform.State) (locked bool, err error) {
 	return false, nil
 }
 
-func (r *RedisLock) Unlock(s *terraform.State) (unlocked bool, err error) {
+func (r *Lock) Unlock(s *terraform.State) (unlocked bool, err error) {
 	mutex := r.client.NewMutex(lockKey, redsync.WithExpiry(12*time.Hour), redsync.WithTries(1), redsync.WithGenValueFunc(func() (string, error) {
 		return uuid.New().String(), nil
 	}))
@@ -131,7 +131,7 @@ func (r *RedisLock) Unlock(s *terraform.State) (unlocked bool, err error) {
 	return true, nil
 }
 
-func (r *RedisLock) setLock(s *terraform.State) error {
+func (r *Lock) setLock(s *terraform.State) error {
 	ctx := context.Background()
 
 	conn, err := r.pool.GetContext(ctx)
@@ -153,7 +153,7 @@ func (r *RedisLock) setLock(s *terraform.State) error {
 	return nil
 }
 
-func (r *RedisLock) getLock(s *terraform.State) ([]byte, error) {
+func (r *Lock) getLock(s *terraform.State) ([]byte, error) {
 	ctx := context.Background()
 
 	conn, err := r.pool.GetContext(ctx)
@@ -176,7 +176,7 @@ func (r *RedisLock) getLock(s *terraform.State) ([]byte, error) {
 	return lock, nil
 }
 
-func (r *RedisLock) deleteLock(s *terraform.State) error {
+func (r *Lock) deleteLock(s *terraform.State) error {
 	ctx := context.Background()
 
 	conn, err := r.pool.GetContext(ctx)

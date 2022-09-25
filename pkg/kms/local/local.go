@@ -9,17 +9,17 @@ import (
 	"io"
 )
 
-type LocalKMS struct {
+type KMS struct {
 	cipher cipher.AEAD
 }
 
-func NewLocalKMS(key string) (*LocalKMS, error) {
+func NewKMS(key string) (*KMS, error) {
 	gcm, err := buildCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
-	return &LocalKMS{
+	return &KMS{
 		cipher: gcm,
 	}, nil
 }
@@ -33,11 +33,11 @@ func GenerateKey() (string, error) {
 	return base64.StdEncoding.EncodeToString(bytes), nil
 }
 
-func (v *LocalKMS) GetName() string {
+func (v *KMS) GetName() string {
 	return "local"
 }
 
-func (s *LocalKMS) Encrypt(d []byte) ([]byte, error) {
+func (s *KMS) Encrypt(d []byte) ([]byte, error) {
 	nonce := make([]byte, s.cipher.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("failed to create nonce for seal with local KMS: %v", err)
@@ -46,7 +46,7 @@ func (s *LocalKMS) Encrypt(d []byte) ([]byte, error) {
 	return s.cipher.Seal(nonce, nonce, d, nil), nil
 }
 
-func (s *LocalKMS) Decrypt(d []byte) ([]byte, error) {
+func (s *KMS) Decrypt(d []byte) ([]byte, error) {
 	nonceSize := s.cipher.NonceSize()
 	nonce, ciphertext := d[:nonceSize], d[nonceSize:]
 

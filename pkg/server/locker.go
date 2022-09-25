@@ -16,9 +16,9 @@ func GetLocker() (l lock.Locker, err error) {
 
 	switch backend {
 	case "local":
-		l = local.NewLocalLock()
+		l = local.NewLock()
 	case "redis":
-		l = redis.NewRedisLock()
+		l = redis.NewLock()
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}

@@ -23,7 +23,7 @@ func GetKMS() (k kms.KMS, err error) {
 			return nil, fmt.Errorf("no key for local KMS defined, set KMS_KEY (e.g. to this generated key: %s)", key)
 		}
 
-		k, err = local.NewLocalKMS(key)
+		k, err = local.NewKMS(key)
 	case "vault":
 		var key string
 		keyPath := viper.GetString("kms_vault_key_path")
@@ -37,7 +37,7 @@ func GetKMS() (k kms.KMS, err error) {
 			return nil, fmt.Errorf("failed to get key for Vault KMS: %v", err)
 		}
 
-		k, err = local.NewLocalKMS(key)
+		k, err = local.NewKMS(key)
 	case "transit":
 		k, err = transit.NewVaultTransit(viper.GetString("kms_transit_engine"), viper.GetString("kms_transit_key"))
 	default:
