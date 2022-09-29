@@ -3,12 +3,13 @@ package postgres
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	pgclient "github.com/nimbolus/terraform-backend/pkg/client/postgres"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
+
+const Name = "postgres"
 
 type Lock struct {
 	db *pgclient.Client
@@ -26,7 +27,7 @@ func NewLock() (*Lock, error) {
 }
 
 func (l *Lock) GetName() string {
-	return "pg"
+	return Name
 }
 
 func (l *Lock) Lock(s *terraform.State) (bool, error) {
@@ -40,9 +41,9 @@ func (l *Lock) Lock(s *terraform.State) (bool, error) {
 
 	defer tx.Rollback()
 
-	var lockData []byte
+	var lock []byte
 
-	if err := tx.QueryRow(`SELECT lock_data FROM `+l.db.GetLocksTableName()+` WHERE state_id = $1`, s.ID).Scan(&lockData); err != nil {
+	if err := tx.QueryRow(`SELECT lock_data FROM `+l.db.GetLocksTableName()+` WHERE state_id = $1`, s.ID).Scan(&lock); err != nil {
 		if err == sql.ErrNoRows {
 			if _, err := tx.Exec(`INSERT INTO locks (state_id, lock_data) VALUES ($1, $2)`, s.ID, s.Lock); err != nil {
 				return false, err
@@ -58,12 +59,14 @@ func (l *Lock) Lock(s *terraform.State) (bool, error) {
 		return false, err
 	}
 
-	if string(lockData) == string(s.Lock) {
+	if string(lock) == string(s.Lock) {
 		// you already have the lock
 		return true, nil
 	}
 
-	return false, fmt.Errorf("lock already taken for id %s: %s", s.ID, string(lockData))
+	s.Lock = lock
+
+	return false, nil
 }
 
 func (l *Lock) Unlock(s *terraform.State) (bool, error) {
@@ -77,18 +80,18 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 
 	defer tx.Rollback()
 
-	var lockData []byte
+	var lock []byte
 
-	if err := tx.QueryRow(`SELECT lock_data FROM `+l.db.GetLocksTableName()+` WHERE state_id = $1`, s.ID).Scan(&lockData); err != nil {
+	if err := tx.QueryRow(`SELECT lock_data FROM `+l.db.GetLocksTableName()+` WHERE state_id = $1`, s.ID).Scan(&lock); err != nil {
 		if err == sql.ErrNoRows {
-			return false, fmt.Errorf("no lock for id %s found", s.ID)
+			return false, nil
 		}
 
 		return false, err
 	}
 
-	if string(lockData) != string(s.Lock) {
-		return false, fmt.Errorf("lock mismatch for id %s", s.ID)
+	if string(lock) != string(s.Lock) {
+		return false, nil
 	}
 
 	if _, err := tx.Exec(`DELETE FROM `+l.db.GetLocksTableName()+` WHERE state_id = $1 AND lock_data = $2`, s.ID, s.Lock); err != nil {

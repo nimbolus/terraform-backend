@@ -7,6 +7,8 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
+const Name = "basic"
+
 type BasicAuth struct{}
 
 func NewBasicAuth() *BasicAuth {
@@ -14,7 +16,7 @@ func NewBasicAuth() *BasicAuth {
 }
 
 func (l *BasicAuth) GetName() string {
-	return "basic"
+	return Name
 }
 
 func (b *BasicAuth) Authenticate(secret string, s *terraform.State) (bool, error) {

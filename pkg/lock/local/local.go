@@ -6,6 +6,8 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
+const Name = "local"
+
 type Lock struct {
 	mutex sync.Mutex
 	db    map[string][]byte
@@ -18,7 +20,7 @@ func NewLock() *Lock {
 }
 
 func (l *Lock) GetName() string {
-	return "local"
+	return Name
 }
 
 func (l *Lock) Lock(s *terraform.State) (bool, error) {

@@ -19,7 +19,10 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
-const lockKey = "terraform-backend-state-lock"
+const (
+	Name    = "redis"
+	lockKey = "terraform-backend-state-lock"
+)
 
 type Lock struct {
 	pool   *redigo.Pool
@@ -39,7 +42,7 @@ func NewLock() *Lock {
 }
 
 func (r *Lock) GetName() string {
-	return "redis"
+	return Name
 }
 
 func (r *Lock) Lock(s *terraform.State) (locked bool, err error) {

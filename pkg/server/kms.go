@@ -12,11 +12,11 @@ import (
 )
 
 func GetKMS() (k kms.KMS, err error) {
-	viper.SetDefault("kms_backend", "local")
+	viper.SetDefault("kms_backend", local.Name)
 	backend := viper.GetString("kms_backend")
 
 	switch backend {
-	case "local":
+	case local.Name:
 		key := viper.GetString("kms_key")
 		if key == "" {
 			key, _ = local.GenerateKey()
@@ -38,7 +38,7 @@ func GetKMS() (k kms.KMS, err error) {
 		}
 
 		k, err = local.NewKMS(key)
-	case "transit":
+	case transit.Name:
 		k, err = transit.NewVaultTransit(viper.GetString("kms_transit_engine"), viper.GetString("kms_transit_key"))
 	default:
 		return nil, fmt.Errorf("failed to initialize KMS backend %s: %v", backend, err)

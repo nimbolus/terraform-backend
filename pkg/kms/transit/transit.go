@@ -7,6 +7,8 @@ import (
 	vaultclient "github.com/nimbolus/terraform-backend/pkg/client/vault"
 )
 
+const Name = "transit"
+
 type VaultTransit struct {
 	engine string
 	key    string
@@ -25,7 +27,7 @@ func NewVaultTransit(engine string, key string) (*VaultTransit, error) {
 }
 
 func (v *VaultTransit) GetName() string {
-	return "transit"
+	return Name
 }
 
 func (v *VaultTransit) Encrypt(d []byte) ([]byte, error) {
