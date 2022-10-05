@@ -6,13 +6,14 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/nimbolus/terraform-backend/kms"
-	"github.com/nimbolus/terraform-backend/terraform"
-	"github.com/nimbolus/terraform-backend/terraform/auth"
-	"github.com/nimbolus/terraform-backend/terraform/lock"
-	"github.com/nimbolus/terraform-backend/terraform/storage"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+
+	"github.com/nimbolus/terraform-backend/pkg/auth"
+	"github.com/nimbolus/terraform-backend/pkg/kms"
+	"github.com/nimbolus/terraform-backend/pkg/lock"
+	"github.com/nimbolus/terraform-backend/pkg/storage"
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 func httpResponse(w http.ResponseWriter, code int, body string) {

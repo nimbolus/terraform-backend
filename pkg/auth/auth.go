@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/nimbolus/terraform-backend/terraform"
-	"github.com/nimbolus/terraform-backend/terraform/auth/basic"
-	"github.com/nimbolus/terraform-backend/terraform/auth/jwt"
 	"github.com/spf13/viper"
+
+	"github.com/nimbolus/terraform-backend/pkg/auth/basic"
+	"github.com/nimbolus/terraform-backend/pkg/auth/jwt"
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type Authenticator interface {

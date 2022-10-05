@@ -7,7 +7,8 @@ import (
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"github.com/nimbolus/terraform-backend/terraform"
+
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type S3Storage struct {

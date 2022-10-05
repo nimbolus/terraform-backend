@@ -9,8 +9,9 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis"
 	goredis "github.com/go-redsync/redsync/v4/redis/goredis/v8"
-	redisclient "github.com/nimbolus/terraform-backend/client/redis"
-	"github.com/nimbolus/terraform-backend/terraform"
+
+	redisclient "github.com/nimbolus/terraform-backend/pkg/client/redis"
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type RedisLock struct {

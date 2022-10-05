@@ -3,10 +3,11 @@ package storage
 import (
 	"fmt"
 
-	"github.com/nimbolus/terraform-backend/terraform"
-	"github.com/nimbolus/terraform-backend/terraform/storage/filesystem"
-	"github.com/nimbolus/terraform-backend/terraform/storage/s3"
 	"github.com/spf13/viper"
+
+	"github.com/nimbolus/terraform-backend/pkg/storage/filesystem"
+	"github.com/nimbolus/terraform-backend/pkg/storage/s3"
+	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 type Storage interface {
