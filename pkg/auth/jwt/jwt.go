@@ -8,6 +8,8 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
+const Name = "jwt"
+
 type JWTAuth struct {
 	issuerURL string
 }
@@ -19,7 +21,7 @@ func NewJWTAuth(issuerURL string) *JWTAuth {
 }
 
 func (l *JWTAuth) GetName() string {
-	return "jwt"
+	return Name
 }
 
 func (b *JWTAuth) Authenticate(secret string, s *terraform.State) (bool, error) {

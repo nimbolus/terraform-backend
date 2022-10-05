@@ -11,6 +11,8 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
+const Name = "s3"
+
 type S3Storage struct {
 	client *minio.Client
 	bucket string
@@ -38,7 +40,7 @@ func NewS3Storage(endpoint, bucket, accessKey, secretKey string, useSSL bool) (*
 }
 
 func (s *S3Storage) GetName() string {
-	return "s3"
+	return Name
 }
 
 func (s *S3Storage) SaveState(state *terraform.State) error {

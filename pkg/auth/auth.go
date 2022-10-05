@@ -24,13 +24,13 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 
 	var authenticator Authenticator
 	switch backend {
-	case "basic":
+	case basic.Name:
 		viper.SetDefault("auth_basic_enabled", true)
 		if !viper.GetBool("auth_basic_enabled") {
 			return false, fmt.Errorf("basic auth is not enabled")
 		}
 		authenticator = basic.NewBasicAuth()
-	case "jwt":
+	case jwt.Name:
 		issuerURL := viper.GetString("auth_jwt_oidc_issuer_url")
 		if addr := viper.GetString("vault_addr"); issuerURL != "" && addr != "" {
 			issuerURL = fmt.Sprintf("%s/v1/identity/oidc", addr)

@@ -11,14 +11,14 @@ import (
 )
 
 func GetStorage() (s storage.Storage, err error) {
-	viper.SetDefault("storage_backend", "fs")
+	viper.SetDefault("storage_backend", filesystem.Name)
 	backend := viper.GetString("storage_backend")
 
 	switch backend {
-	case "fs":
+	case filesystem.Name:
 		viper.SetDefault("storage_fs_dir", "./states")
 		s, err = filesystem.NewFileSystemStorage(viper.GetString("storage_fs_dir"))
-	case "s3":
+	case s3.Name:
 		viper.SetDefault("storage_s3_endpoint", "s3.amazonaws.com")
 		viper.SetDefault("storage_s3_use_ssl", true)
 		viper.SetDefault("storage_s3_bucket", "terraform-state")

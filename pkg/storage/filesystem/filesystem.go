@@ -8,6 +8,8 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
+const Name = "fs"
+
 type FileSystemStorage struct {
 	directory string
 }
@@ -24,7 +26,7 @@ func NewFileSystemStorage(directory string) (*FileSystemStorage, error) {
 }
 
 func (f *FileSystemStorage) GetName() string {
-	return "file"
+	return Name
 }
 
 func (f *FileSystemStorage) SaveState(s *terraform.State) error {

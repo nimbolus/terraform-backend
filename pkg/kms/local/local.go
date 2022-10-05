@@ -9,6 +9,8 @@ import (
 	"io"
 )
 
+const Name = "local"
+
 type KMS struct {
 	cipher cipher.AEAD
 }
@@ -34,7 +36,7 @@ func GenerateKey() (string, error) {
 }
 
 func (v *KMS) GetName() string {
-	return "local"
+	return Name
 }
 
 func (s *KMS) Encrypt(d []byte) ([]byte, error) {
