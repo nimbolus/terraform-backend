@@ -6,22 +6,22 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
-type LocalLock struct {
+type Lock struct {
 	mutex sync.Mutex
 	db    map[string][]byte
 }
 
-func NewLocalLock() *LocalLock {
-	return &LocalLock{
+func NewLock() *Lock {
+	return &Lock{
 		db: make(map[string][]byte),
 	}
 }
 
-func (l *LocalLock) GetName() string {
+func (l *Lock) GetName() string {
 	return "local"
 }
 
-func (l *LocalLock) Lock(s *terraform.State) (bool, error) {
+func (l *Lock) Lock(s *terraform.State) (bool, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
@@ -42,7 +42,7 @@ func (l *LocalLock) Lock(s *terraform.State) (bool, error) {
 	return true, nil
 }
 
-func (l *LocalLock) Unlock(s *terraform.State) (bool, error) {
+func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
@@ -58,5 +58,6 @@ func (l *LocalLock) Unlock(s *terraform.State) (bool, error) {
 	}
 
 	delete(l.db, s.ID)
+
 	return true, nil
 }

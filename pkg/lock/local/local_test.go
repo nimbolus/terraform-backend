@@ -13,7 +13,7 @@ func init() {
 }
 
 func TestLock(t *testing.T) {
-	l := NewLocalLock()
+	l := NewLock()
 
 	util.LockTest(t, l)
 }

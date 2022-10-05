@@ -18,13 +18,13 @@ func init() {
 }
 
 func TestLock(t *testing.T) {
-	l := NewRedisLock()
+	l := NewLock()
 
 	util.LockTest(t, l)
 }
 
 func TestGetLock(t *testing.T) {
-	l := NewRedisLock()
+	l := NewLock()
 
 	expectedLock := uuid.New().String()
 
