@@ -1,6 +1,7 @@
 package local
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
@@ -62,4 +63,16 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 	delete(l.db, s.ID)
 
 	return true, nil
+}
+
+func (l *Lock) GetLock(s *terraform.State) ([]byte, error) {
+	l.mutex.Lock()
+	defer l.mutex.Unlock()
+
+	lock, ok := l.db[s.ID]
+	if !ok {
+		return nil, fmt.Errorf("no lock found for state %s", s.ID)
+	}
+
+	return lock, nil
 }

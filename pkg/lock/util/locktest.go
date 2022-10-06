@@ -43,6 +43,12 @@ func LockTest(t *testing.T, l lock.Locker) {
 		t.Error(err)
 	}
 
+	if lock, err := l.GetLock(&s1); err != nil {
+		t.Error(err)
+	} else if string(lock) != string(s1.Lock) {
+		t.Errorf("lock is not equal: %s != %s", lock, s1.Lock)
+	}
+
 	if locked, err := l.Lock(&s1); err != nil || !locked {
 		t.Error("should be able to lock twice from the same process")
 	}

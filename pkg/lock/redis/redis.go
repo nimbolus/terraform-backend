@@ -134,6 +134,32 @@ func (r *Lock) Unlock(s *terraform.State) (unlocked bool, err error) {
 	return true, nil
 }
 
+func (r *Lock) GetLock(s *terraform.State) (lock []byte, err error) {
+	mutex := r.client.NewMutex(lockKey, redsync.WithExpiry(12*time.Hour), redsync.WithTries(1), redsync.WithGenValueFunc(func() (string, error) {
+		return uuid.New().String(), nil
+	}))
+
+	// lock the global redis mutex
+	if err := mutex.Lock(); err != nil {
+		log.Errorf("failed to lock redsync mutex: %v", err)
+
+		return nil, err
+	}
+
+	defer func() {
+		// unlock the global redis mutex
+		if _, mutErr := mutex.Unlock(); mutErr != nil {
+			log.Errorf("failed to unlock redsync mutex: %v", mutErr)
+
+			if err != nil {
+				err = multierr.Append(err, mutErr)
+			}
+		}
+	}()
+
+	return r.getLock(s)
+}
+
 func (r *Lock) setLock(s *terraform.State) error {
 	ctx := context.Background()
 

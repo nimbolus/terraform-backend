@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -63,7 +64,7 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 		case http.MethodGet:
 			Get(w, state, store, kms)
 		case http.MethodPost:
-			Post(w, state, body, store, kms)
+			Post(req, w, state, body, locker, store, kms)
 		case http.MethodDelete:
 			Delete(w, state, store)
 		default:
@@ -128,7 +129,22 @@ func Get(w http.ResponseWriter, state *terraform.State, store storage.Storage, k
 	HTTPResponse(w, http.StatusOK, string(state.Data))
 }
 
-func Post(w http.ResponseWriter, state *terraform.State, body []byte, store storage.Storage, kms kms.KMS) {
+func Post(r *http.Request, w http.ResponseWriter, state *terraform.State, body []byte, locker lock.Locker, store storage.Storage, kms kms.KMS) {
+	reqLockID := r.URL.Query().Get("ID")
+
+	lockID, err := locker.GetLock(state)
+	if err != nil {
+		log.Warnf("failed to get lock for state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusInternalServerError, "")
+		return
+	}
+
+	if !strings.Contains(string(lockID), fmt.Sprintf(`"ID":"%s"`, reqLockID)) {
+		log.Warnf("attempting to write state with wrong lock %s (expected %s)", reqLockID, lockID)
+		HTTPResponse(w, http.StatusBadRequest, "")
+		return
+	}
+
 	log.Debugf("save state with id %s", state.ID)
 
 	data, err := kms.Encrypt(body)

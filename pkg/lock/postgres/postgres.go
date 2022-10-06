@@ -130,3 +130,16 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 
 	return true, nil
 }
+
+func (l *Lock) GetLock(s *terraform.State) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	var lock []byte
+
+	if err := l.db.QueryRowContext(ctx, `SELECT lock_data FROM `+l.table+` WHERE state_id = $1`, s.ID).Scan(&lock); err != nil {
+		return nil, err
+	}
+
+	return lock, nil
+}
