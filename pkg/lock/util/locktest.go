@@ -2,6 +2,7 @@ package util
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/spf13/viper"
@@ -19,7 +20,15 @@ func LockTest(t *testing.T, l lock.Locker) {
 		ID:      terraform.GetStateID("test", "test"),
 		Project: "test",
 		Name:    "test",
-		Lock:    []byte(uuid.New().String()),
+		Lock: terraform.LockInfo{
+			ID:        uuid.New().String(),
+			Path:      "",
+			Operation: "LockTest",
+			Who:       "test",
+			Version:   "0.0.0",
+			Created:   time.Now().String(),
+			Info:      "",
+		},
 	}
 	t.Logf("s1: %s", s1.Lock)
 
@@ -27,7 +36,15 @@ func LockTest(t *testing.T, l lock.Locker) {
 		ID:      terraform.GetStateID("test", "test"),
 		Project: "test",
 		Name:    "test",
-		Lock:    []byte(uuid.New().String()),
+		Lock: terraform.LockInfo{
+			ID:        uuid.New().String(),
+			Path:      "",
+			Operation: "LockTest",
+			Who:       "test",
+			Version:   "0.0.0",
+			Created:   time.Now().String(),
+			Info:      "",
+		},
 	}
 	t.Logf("s2: %s", s2.Lock)
 
@@ -45,7 +62,7 @@ func LockTest(t *testing.T, l lock.Locker) {
 
 	if lock, err := l.GetLock(&s1); err != nil {
 		t.Error(err)
-	} else if string(lock) != string(s1.Lock) {
+	} else if !lock.Equal(s1.Lock) {
 		t.Errorf("lock is not equal: %s != %s", lock, s1.Lock)
 	}
 
@@ -57,7 +74,7 @@ func LockTest(t *testing.T, l lock.Locker) {
 		t.Error("should not be able to lock twice from different processes")
 	}
 
-	if string(s2.Lock) != string(s1.Lock) {
+	if !s2.Lock.Equal(s1.Lock) {
 		t.Error("failed Lock() should return the lock information of the current lock")
 	}
 

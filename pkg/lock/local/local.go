@@ -11,12 +11,12 @@ const Name = "local"
 
 type Lock struct {
 	mutex sync.Mutex
-	db    map[string][]byte
+	db    map[string]terraform.LockInfo
 }
 
 func NewLock() *Lock {
 	return &Lock{
-		db: make(map[string][]byte),
+		db: make(map[string]terraform.LockInfo),
 	}
 }
 
@@ -30,7 +30,7 @@ func (l *Lock) Lock(s *terraform.State) (bool, error) {
 
 	lock, ok := l.db[s.ID]
 	if ok {
-		if string(lock) == string(s.Lock) {
+		if lock.Equal(s.Lock) {
 			// you already have the lock
 			return true, nil
 		}
@@ -54,7 +54,7 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 		return false, nil
 	}
 
-	if string(lock) != string(s.Lock) {
+	if !lock.Equal(s.Lock) {
 		s.Lock = lock
 
 		return false, nil
@@ -65,13 +65,13 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 	return true, nil
 }
 
-func (l *Lock) GetLock(s *terraform.State) ([]byte, error) {
+func (l *Lock) GetLock(s *terraform.State) (terraform.LockInfo, error) {
 	l.mutex.Lock()
 	defer l.mutex.Unlock()
 
 	lock, ok := l.db[s.ID]
 	if !ok {
-		return nil, fmt.Errorf("no lock found for state %s", s.ID)
+		return terraform.LockInfo{}, fmt.Errorf("no lock found for state %s", s.ID)
 	}
 
 	return lock, nil

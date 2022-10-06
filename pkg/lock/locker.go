@@ -8,5 +8,5 @@ type Locker interface {
 	GetName() string
 	Lock(s *terraform.State) (ok bool, err error)
 	Unlock(s *terraform.State) (ok bool, err error)
-	GetLock(s *terraform.State) ([]byte, error)
+	GetLock(s *terraform.State) (terraform.LockInfo, error)
 }

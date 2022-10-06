@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -86,7 +87,7 @@ func (r *Lock) Lock(s *terraform.State) (locked bool, err error) {
 	}
 
 	// state is locked
-	if string(lock) == string(s.Lock) {
+	if lock.Equal(s.Lock) {
 		return true, nil
 	}
 
@@ -123,7 +124,7 @@ func (r *Lock) Unlock(s *terraform.State) (unlocked bool, err error) {
 		return false, nil
 	}
 
-	if string(lock) != string(s.Lock) {
+	if !lock.Equal(s.Lock) {
 		return false, nil
 	}
 
@@ -134,7 +135,7 @@ func (r *Lock) Unlock(s *terraform.State) (unlocked bool, err error) {
 	return true, nil
 }
 
-func (r *Lock) GetLock(s *terraform.State) (lock []byte, err error) {
+func (r *Lock) GetLock(s *terraform.State) (lock terraform.LockInfo, err error) {
 	mutex := r.client.NewMutex(lockKey, redsync.WithExpiry(12*time.Hour), redsync.WithTries(1), redsync.WithGenValueFunc(func() (string, error) {
 		return uuid.New().String(), nil
 	}))
@@ -143,7 +144,7 @@ func (r *Lock) GetLock(s *terraform.State) (lock []byte, err error) {
 	if err := mutex.Lock(); err != nil {
 		log.Errorf("failed to lock redsync mutex: %v", err)
 
-		return nil, err
+		return terraform.LockInfo{}, err
 	}
 
 	defer func() {
@@ -170,7 +171,14 @@ func (r *Lock) setLock(s *terraform.State) error {
 
 	defer conn.Close()
 
-	reply, err := redigo.String(conn.Do("SET", s.ID, base64.StdEncoding.EncodeToString(s.Lock), "NX", "PX", int(12*time.Hour/time.Millisecond)))
+	rawLock, err := json.Marshal(s.Lock)
+	if err != nil {
+		return err
+	}
+
+	lockString := base64.StdEncoding.EncodeToString(rawLock)
+
+	reply, err := redigo.String(conn.Do("SET", s.ID, lockString, "NX", "PX", int(12*time.Hour/time.Millisecond)))
 	if err != nil {
 		return err
 	}
@@ -182,24 +190,30 @@ func (r *Lock) setLock(s *terraform.State) error {
 	return nil
 }
 
-func (r *Lock) getLock(s *terraform.State) ([]byte, error) {
+func (r *Lock) getLock(s *terraform.State) (terraform.LockInfo, error) {
 	ctx := context.Background()
 
 	conn, err := r.pool.GetContext(ctx)
 	if err != nil {
-		return nil, err
+		return terraform.LockInfo{}, err
 	}
 
 	defer conn.Close()
 
 	value, err := redigo.String(conn.Do("GET", s.ID))
 	if err != nil {
-		return nil, err
+		return terraform.LockInfo{}, err
 	}
 
-	lock, err := base64.StdEncoding.DecodeString(value)
+	rawLock, err := base64.StdEncoding.DecodeString(value)
 	if err != nil {
-		return nil, err
+		return terraform.LockInfo{}, err
+	}
+
+	var lock terraform.LockInfo
+
+	if err := json.Unmarshal(rawLock, &lock); err != nil {
+		return terraform.LockInfo{}, err
 	}
 
 	return lock, nil

@@ -19,6 +19,7 @@ import (
 	localkms "github.com/nimbolus/terraform-backend/pkg/kms/local"
 	locallock "github.com/nimbolus/terraform-backend/pkg/lock/local"
 	"github.com/nimbolus/terraform-backend/pkg/storage/filesystem"
+	tf "github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 func NewStateHandler(t *testing.T) http.Handler {
@@ -111,20 +112,20 @@ func TestServerHandler(t *testing.T) {
 	terraform.ApplyAndIdempotent(t, terraformOptions)
 }
 
-func simulateLock(t *testing.T, address string, lock bool) {
+func simulateLock(t *testing.T, address string, doLock bool) {
 	method := "LOCK"
-	if !lock {
+	if !doLock {
 		method = "UNLOCK"
 	}
 
-	postBody, _ := json.Marshal(map[string]string{
-		"ID":        "cf290ef3-6090-410e-9784-d017a4b1536a",
-		"Path":      "",
-		"Operation": "simulateLock",
-		"Who":       "simulator",
-		"Version":   "0.0.0",
-		"Created":   "2021-01-01T00:00:00Z",
-		"Info":      "",
+	postBody, _ := json.Marshal(&tf.LockInfo{
+		ID:        "cf290ef3-6090-410e-9784-d017a4b1536a",
+		Path:      "",
+		Operation: "simulateLock",
+		Who:       "simulator",
+		Version:   "0.0.0",
+		Created:   "2021-01-01T00:00:00Z",
+		Info:      "",
 	})
 
 	req, err := http.NewRequest(method, address, bytes.NewBuffer(postBody))
