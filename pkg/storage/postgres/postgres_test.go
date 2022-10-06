@@ -8,18 +8,18 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/nimbolus/terraform-backend/pkg/lock/util"
+	"github.com/nimbolus/terraform-backend/pkg/storage/util"
 )
 
 func init() {
 	viper.AutomaticEnv()
 }
 
-func TestLock(t *testing.T) {
-	l, err := NewLock("locks")
+func TestStorage(t *testing.T) {
+	s, err := NewPostgresStorage("states")
 	if err != nil {
 		t.Error(err)
 	}
 
-	util.LockTest(t, l)
+	util.StorageTest(t, s)
 }

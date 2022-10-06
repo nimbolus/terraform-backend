@@ -21,7 +21,8 @@ func GetLocker() (l lock.Locker, err error) {
 	case redis.Name:
 		l = redis.NewLock()
 	case postgres.Name:
-		l, err = postgres.NewLock()
+		viper.SetDefault("lock_postgres_table", "locks")
+		l, err = postgres.NewLock(viper.GetString("lock_postgres_table"))
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}
