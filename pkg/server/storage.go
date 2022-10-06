@@ -7,6 +7,7 @@ import (
 
 	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/storage/filesystem"
+	"github.com/nimbolus/terraform-backend/pkg/storage/postgres"
 	"github.com/nimbolus/terraform-backend/pkg/storage/s3"
 )
 
@@ -18,6 +19,9 @@ func GetStorage() (s storage.Storage, err error) {
 	case filesystem.Name:
 		viper.SetDefault("storage_fs_dir", "./states")
 		s, err = filesystem.NewFileSystemStorage(viper.GetString("storage_fs_dir"))
+	case postgres.Name:
+		viper.SetDefault("storage_postgres_table", "states")
+		s, err = postgres.NewPostgresStorage(viper.GetString("storage_postgres_table"))
 	case s3.Name:
 		viper.SetDefault("storage_s3_endpoint", "s3.amazonaws.com")
 		viper.SetDefault("storage_s3_use_ssl", true)

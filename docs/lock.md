@@ -25,4 +25,8 @@ This backend uses an external Postgres server to lock the states. It's scalable 
 ### Config
 Set `LOCK_BACKEND` to `postgres`.
 
+| Environment Variable | Type   | Default | Description                           |
+|----------------------|--------|---------|---------------------------------------|
+| LOCK_POSTGRES_TABLE  | string | `locks` | The table name used for storing locks |
+
 Make sure that the [Postgres client](clients.md#postgres-client) is set up properly.

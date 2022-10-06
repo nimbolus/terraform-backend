@@ -30,3 +30,16 @@ Set `STORAGE_BACKEND` to `fs`.
 | STORAGE_S3_SECRET_KEY | string | --                 | S3 Secret key           |
 | STORAGE_S3_BUCKET     | string | `terraform-state`  | Name of the S3 bucket   |
 
+
+## Postgres
+
+The Postgres backend stores state files in a database table.
+
+### Config
+Set `STORAGE_BACKEND` to `postgres`.
+
+| Environment Variable   | Type   | Default  | Description                            |
+|------------------------|--------|----------|----------------------------------------|
+| STORAGE_POSTGRES_TABLE | string | `states` | The table name used for storing states |
+
+Make sure that the [Postgres client](clients.md#postgres-client) is set up properly.
