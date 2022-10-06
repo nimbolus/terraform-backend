@@ -21,6 +21,11 @@ func HTTPResponse(w http.ResponseWriter, code int, body string) {
 	fmt.Fprint(w, body)
 }
 
+func HealthHandler(w http.ResponseWriter, req *http.Request) {
+	log.Debugf("%s %s", req.Method, req.URL.Path)
+	HTTPResponse(w, http.StatusOK, "")
+}
+
 func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, req *http.Request) {
 		body, err := io.ReadAll(req.Body)
@@ -52,79 +57,15 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 
 		switch req.Method {
 		case "LOCK":
-			log.Debugf("try to lock state with id %s", state.ID)
-			state.Lock = body
-
-			if ok, err := locker.Lock(state); err != nil {
-				log.Errorf("failed to lock state with id %s: %v", state.ID, err)
-				HTTPResponse(w, http.StatusInternalServerError, "")
-			} else if !ok {
-				log.Warnf("state with id %s is already locked by %s", state.ID, state.Lock)
-				HTTPResponse(w, http.StatusLocked, string(state.Lock))
-			} else {
-				log.Debugf("state with id %s was locked successfully", state.ID)
-				HTTPResponse(w, http.StatusOK, "")
-			}
-			return
+			Lock(w, state, body, locker)
 		case "UNLOCK":
-			log.Debugf("try to unlock state with id %s", state.ID)
-			state.Lock = body
-
-			if ok, err := locker.Unlock(state); err != nil {
-				log.Errorf("failed to unlock state with id %s: %v", state.ID, err)
-				HTTPResponse(w, http.StatusInternalServerError, "")
-			} else if !ok {
-				log.Warnf("failed to unlock state with id %s: %v", state.ID, err)
-				HTTPResponse(w, http.StatusBadRequest, string(state.Lock))
-			} else {
-				log.Debugf("state with id %s was unlocked successfully", state.ID)
-				HTTPResponse(w, http.StatusOK, "")
-			}
-			return
+			Unlock(w, state, body, locker)
 		case http.MethodGet:
-			log.Debugf("get state with id %s", state.ID)
-			stateID := state.ID
-			state, err = store.GetState(state.ID)
-			if err != nil {
-				log.Warnf("failed to get state with id %s: %v", stateID, err)
-				HTTPResponse(w, http.StatusBadRequest, err.Error())
-				return
-			}
-
-			if kms != nil && len(state.Data) > 0 {
-				state.Data, err = kms.Decrypt(state.Data)
-				if err != nil {
-					log.Errorf("failed to decrypt state with id %s: %v", state.ID, err)
-					HTTPResponse(w, http.StatusInternalServerError, "")
-					return
-				}
-			}
-
-			HTTPResponse(w, http.StatusOK, string(state.Data))
-			return
+			Get(w, state, store, kms)
 		case http.MethodPost:
-			log.Debugf("save state with id %s", state.ID)
-
-			state.Data, err = kms.Encrypt(body)
-			if err != nil {
-				log.Errorf("failed to encrypt state with id %s: %v", state.ID, err)
-				HTTPResponse(w, http.StatusInternalServerError, "")
-				return
-			}
-
-			err := store.SaveState(state)
-			if err != nil {
-				log.Warnf("failed to save state with id %s: %v", state.ID, err)
-				HTTPResponse(w, http.StatusBadRequest, err.Error())
-				return
-			}
-
-			HTTPResponse(w, http.StatusOK, "")
-			return
+			Post(w, state, body, store, kms)
 		case http.MethodDelete:
-			log.Debugf("delete state with id %s", state.ID)
-			HTTPResponse(w, http.StatusNotImplemented, "Delete state is not implemented")
-			return
+			Delete(w, state, store)
 		default:
 			log.Warnf("unknown method %s called", req.Method)
 			HTTPResponse(w, http.StatusNotImplemented, "Not implemented")
@@ -133,7 +74,83 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 	}
 }
 
-func HealthHandler(w http.ResponseWriter, req *http.Request) {
-	log.Debugf("%s %s", req.Method, req.URL.Path)
+func Lock(w http.ResponseWriter, state *terraform.State, body []byte, locker lock.Locker) {
+	log.Debugf("try to lock state with id %s", state.ID)
+	state.Lock = body
+
+	if ok, err := locker.Lock(state); err != nil {
+		log.Errorf("failed to lock state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusInternalServerError, "")
+	} else if !ok {
+		log.Warnf("state with id %s is already locked by %s", state.ID, state.Lock)
+		HTTPResponse(w, http.StatusLocked, string(state.Lock))
+	} else {
+		log.Debugf("state with id %s was locked successfully", state.ID)
+		HTTPResponse(w, http.StatusOK, "")
+	}
+}
+
+func Unlock(w http.ResponseWriter, state *terraform.State, body []byte, locker lock.Locker) {
+	log.Debugf("try to unlock state with id %s", state.ID)
+	state.Lock = body
+
+	if ok, err := locker.Unlock(state); err != nil {
+		log.Errorf("failed to unlock state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusInternalServerError, "")
+	} else if !ok {
+		log.Warnf("failed to unlock state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusBadRequest, string(state.Lock))
+	} else {
+		log.Debugf("state with id %s was unlocked successfully", state.ID)
+		HTTPResponse(w, http.StatusOK, "")
+	}
+}
+
+func Get(w http.ResponseWriter, state *terraform.State, store storage.Storage, kms kms.KMS) {
+	log.Debugf("get state with id %s", state.ID)
+	stateID := state.ID
+	state, err := store.GetState(state.ID)
+	if err != nil {
+		log.Warnf("failed to get state with id %s: %v", stateID, err)
+		HTTPResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	if kms != nil && len(state.Data) > 0 {
+		state.Data, err = kms.Decrypt(state.Data)
+		if err != nil {
+			log.Errorf("failed to decrypt state with id %s: %v", state.ID, err)
+			HTTPResponse(w, http.StatusInternalServerError, "")
+			return
+		}
+	}
+
+	HTTPResponse(w, http.StatusOK, string(state.Data))
+}
+
+func Post(w http.ResponseWriter, state *terraform.State, body []byte, store storage.Storage, kms kms.KMS) {
+	log.Debugf("save state with id %s", state.ID)
+
+	data, err := kms.Encrypt(body)
+	if err != nil {
+		log.Errorf("failed to encrypt state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusInternalServerError, "")
+		return
+	}
+
+	state.Data = data
+
+	err = store.SaveState(state)
+	if err != nil {
+		log.Warnf("failed to save state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	HTTPResponse(w, http.StatusOK, "")
+}
+
+func Delete(w http.ResponseWriter, state *terraform.State, store storage.Storage) {
+	log.Debugf("delete state with id %s", state.ID)
+	HTTPResponse(w, http.StatusNotImplemented, "Delete state is not implemented")
 }
