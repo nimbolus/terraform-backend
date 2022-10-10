@@ -54,6 +54,10 @@ func (f *FileSystemStorage) GetState(id string) (*terraform.State, error) {
 	}, nil
 }
 
+func (f *FileSystemStorage) DeleteState(id string) error {
+	return os.Remove(f.getFileName(id))
+}
+
 func (f *FileSystemStorage) getFileName(id string) string {
 	return fmt.Sprintf("%s/%s.tfstate", f.directory, id)
 }

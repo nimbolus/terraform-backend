@@ -74,6 +74,10 @@ func (s *S3Storage) GetState(id string) (*terraform.State, error) {
 	return state, nil
 }
 
+func (s *S3Storage) DeleteState(id string) error {
+	return s.client.RemoveObject(context.Background(), s.bucket, getObjectName(id), minio.RemoveObjectOptions{})
+}
+
 func getObjectName(id string) string {
 	return fmt.Sprintf("%s.tfstate", id)
 }

@@ -48,4 +48,9 @@ func StorageTest(t *testing.T, s storage.Storage) {
 	if string(state.Data) != string(savedState.Data) {
 		t.Errorf("state data does not match")
 	}
+
+	err = s.DeleteState(state.ID)
+	if err != nil {
+		t.Error(err)
+	}
 }
