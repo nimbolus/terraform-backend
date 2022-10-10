@@ -80,7 +80,7 @@ func Lock(w http.ResponseWriter, state *terraform.State, body []byte, locker loc
 
 	if err := json.Unmarshal(body, &state.Lock); err != nil {
 		log.Errorf("failed to unmarshal lock info: %v", err)
-		HTTPResponse(w, http.StatusInternalServerError, "")
+		HTTPResponse(w, http.StatusBadRequest, "")
 	}
 
 	if ok, err := locker.Lock(state); err != nil {
@@ -100,7 +100,7 @@ func Unlock(w http.ResponseWriter, state *terraform.State, body []byte, locker l
 
 	if err := json.Unmarshal(body, &state.Lock); err != nil {
 		log.Errorf("failed to unmarshal lock info: %v", err)
-		HTTPResponse(w, http.StatusInternalServerError, "")
+		HTTPResponse(w, http.StatusBadRequest, "")
 	}
 
 	if ok, err := locker.Unlock(state); err != nil {
@@ -143,7 +143,7 @@ func Post(r *http.Request, w http.ResponseWriter, state *terraform.State, body [
 	lock, err := locker.GetLock(state)
 	if err != nil {
 		log.Warnf("failed to get lock for state with id %s: %v", state.ID, err)
-		HTTPResponse(w, http.StatusInternalServerError, "")
+		HTTPResponse(w, http.StatusBadRequest, "")
 		return
 	}
 
