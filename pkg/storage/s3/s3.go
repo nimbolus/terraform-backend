@@ -24,13 +24,15 @@ func NewS3Storage(endpoint, bucket, accessKey, secretKey string, useSSL bool) (*
 		Secure: useSSL,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize minio client: %v", err)
+		return nil, fmt.Errorf("failed to initialize minio client: %w", err)
 	}
 
 	if exists, err := client.BucketExists(context.Background(), bucket); err != nil {
-		return nil, fmt.Errorf("failed to check for bucket: %v", err)
+		return nil, fmt.Errorf("failed to check for bucket: %w", err)
 	} else if !exists {
-		return nil, fmt.Errorf("bucket does not exist")
+		if err = client.MakeBucket(context.Background(), bucket, minio.MakeBucketOptions{}); err != nil {
+			return nil, fmt.Errorf("bucket does not exist and creation failed: %w", err)
+		}
 	}
 
 	return &S3Storage{

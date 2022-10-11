@@ -10,9 +10,9 @@ import (
 )
 
 func TestStorage(t *testing.T) {
-	s, err := NewS3Storage("localhost:9000", "terraform-backend", "root", "password", false)
+	s, err := NewS3Storage("localhost:9000", "tf-backend-integration-test", "root", "password", false)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	util.StorageTest(t, s)
