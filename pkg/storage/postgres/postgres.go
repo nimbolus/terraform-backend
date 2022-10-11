@@ -76,3 +76,7 @@ func (p *PostgresStorage) GetState(id string) (*terraform.State, error) {
 
 	return s, nil
 }
+
+func (p *PostgresStorage) DeleteState(id string) error {
+	return p.db.QueryRow(`DELETE FROM `+p.table+` WHERE state_id = $1`, id).Err()
+}

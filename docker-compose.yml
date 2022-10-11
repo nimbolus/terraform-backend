@@ -26,6 +26,14 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+  minio:
+    image: minio/minio
+    environment:
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: password
+    command: server /storage
+    ports:
+      - "9000:9000"
 
 volumes:
   states:

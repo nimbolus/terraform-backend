@@ -176,5 +176,13 @@ func Post(r *http.Request, w http.ResponseWriter, state *terraform.State, body [
 
 func Delete(w http.ResponseWriter, state *terraform.State, store storage.Storage) {
 	log.Debugf("delete state with id %s", state.ID)
-	HTTPResponse(w, http.StatusNotImplemented, "Delete state is not implemented")
+
+	err := store.DeleteState(state.ID)
+	if err != nil {
+		log.Warnf("failed to delete state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	HTTPResponse(w, http.StatusOK, "")
 }

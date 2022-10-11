@@ -30,7 +30,7 @@ func (f *FileSystemStorage) GetName() string {
 }
 
 func (f *FileSystemStorage) SaveState(s *terraform.State) error {
-	return os.WriteFile(fmt.Sprintf("%s/%s.tfstate", f.directory, s.ID), s.Data, 0600)
+	return os.WriteFile(f.getFileName(s.ID), s.Data, 0600)
 }
 
 func (f *FileSystemStorage) GetState(id string) (*terraform.State, error) {
@@ -52,6 +52,10 @@ func (f *FileSystemStorage) GetState(id string) (*terraform.State, error) {
 	return &terraform.State{
 		Data: d,
 	}, nil
+}
+
+func (f *FileSystemStorage) DeleteState(id string) error {
+	return os.Remove(f.getFileName(id))
 }
 
 func (f *FileSystemStorage) getFileName(id string) string {
