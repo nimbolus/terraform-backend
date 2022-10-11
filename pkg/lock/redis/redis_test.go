@@ -32,7 +32,7 @@ func TestGetLock(t *testing.T) {
 		ID:      terraform.GetStateID("test", "test"),
 		Project: "test",
 		Name:    "test",
-		Lock:    []byte(expectedLock),
+		Lock:    terraform.LockInfo{ID: expectedLock},
 	}
 
 	{
@@ -49,8 +49,8 @@ func TestGetLock(t *testing.T) {
 			t.Error(err)
 		}
 
-		if string(lock) != string(expectedLock) {
-			t.Errorf("lock mismatch: %s != %s", string(lock), string(expectedLock))
+		if lock.ID != expectedLock {
+			t.Errorf("lock mismatch: %s != %s", lock.ID, expectedLock)
 		}
 	}
 

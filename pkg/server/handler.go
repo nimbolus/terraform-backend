@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -63,7 +64,7 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 		case http.MethodGet:
 			Get(w, state, store, kms)
 		case http.MethodPost:
-			Post(w, state, body, store, kms)
+			Post(req, w, state, body, locker, store, kms)
 		case http.MethodDelete:
 			Delete(w, state, store)
 		default:
@@ -76,14 +77,18 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 
 func Lock(w http.ResponseWriter, state *terraform.State, body []byte, locker lock.Locker) {
 	log.Debugf("try to lock state with id %s", state.ID)
-	state.Lock = body
+
+	if err := json.Unmarshal(body, &state.Lock); err != nil {
+		log.Errorf("failed to unmarshal lock info: %v", err)
+		HTTPResponse(w, http.StatusBadRequest, "")
+	}
 
 	if ok, err := locker.Lock(state); err != nil {
 		log.Errorf("failed to lock state with id %s: %v", state.ID, err)
 		HTTPResponse(w, http.StatusInternalServerError, "")
 	} else if !ok {
 		log.Warnf("state with id %s is already locked by %s", state.ID, state.Lock)
-		HTTPResponse(w, http.StatusLocked, string(state.Lock))
+		HTTPResponse(w, http.StatusLocked, state.Lock.ID)
 	} else {
 		log.Debugf("state with id %s was locked successfully", state.ID)
 		HTTPResponse(w, http.StatusOK, "")
@@ -92,14 +97,18 @@ func Lock(w http.ResponseWriter, state *terraform.State, body []byte, locker loc
 
 func Unlock(w http.ResponseWriter, state *terraform.State, body []byte, locker lock.Locker) {
 	log.Debugf("try to unlock state with id %s", state.ID)
-	state.Lock = body
+
+	if err := json.Unmarshal(body, &state.Lock); err != nil {
+		log.Errorf("failed to unmarshal lock info: %v", err)
+		HTTPResponse(w, http.StatusBadRequest, "")
+	}
 
 	if ok, err := locker.Unlock(state); err != nil {
 		log.Errorf("failed to unlock state with id %s: %v", state.ID, err)
 		HTTPResponse(w, http.StatusInternalServerError, "")
 	} else if !ok {
 		log.Warnf("failed to unlock state with id %s: %v", state.ID, err)
-		HTTPResponse(w, http.StatusBadRequest, string(state.Lock))
+		HTTPResponse(w, http.StatusBadRequest, state.Lock.ID)
 	} else {
 		log.Debugf("state with id %s was unlocked successfully", state.ID)
 		HTTPResponse(w, http.StatusOK, "")
@@ -128,7 +137,22 @@ func Get(w http.ResponseWriter, state *terraform.State, store storage.Storage, k
 	HTTPResponse(w, http.StatusOK, string(state.Data))
 }
 
-func Post(w http.ResponseWriter, state *terraform.State, body []byte, store storage.Storage, kms kms.KMS) {
+func Post(r *http.Request, w http.ResponseWriter, state *terraform.State, body []byte, locker lock.Locker, store storage.Storage, kms kms.KMS) {
+	reqLockID := r.URL.Query().Get("ID")
+
+	lock, err := locker.GetLock(state)
+	if err != nil {
+		log.Warnf("failed to get lock for state with id %s: %v", state.ID, err)
+		HTTPResponse(w, http.StatusBadRequest, "")
+		return
+	}
+
+	if lock.ID != reqLockID {
+		log.Warnf("attempting to write state with wrong lock %s (expected %s)", reqLockID, lock.ID)
+		HTTPResponse(w, http.StatusBadRequest, "")
+		return
+	}
+
 	log.Debugf("save state with id %s", state.ID)
 
 	data, err := kms.Encrypt(body)

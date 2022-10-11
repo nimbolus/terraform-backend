@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -67,11 +68,16 @@ func (l *Lock) Lock(s *terraform.State) (bool, error) {
 
 	defer tx.Rollback()
 
-	var lock []byte
+	var rawLock []byte
 
-	if err := tx.QueryRow(`SELECT lock_data FROM `+l.table+` WHERE state_id = $1`, s.ID).Scan(&lock); err != nil {
+	if err := tx.QueryRow(`SELECT lock_data FROM `+l.table+` WHERE state_id = $1`, s.ID).Scan(&rawLock); err != nil {
 		if err == sql.ErrNoRows {
-			if _, err := tx.Exec(`INSERT INTO `+l.table+` (state_id, lock_data) VALUES ($1, $2)`, s.ID, s.Lock); err != nil {
+			lockBytes, err := json.Marshal(s.Lock)
+			if err != nil {
+				return false, err
+			}
+
+			if _, err := tx.Exec(`INSERT INTO `+l.table+` (state_id, lock_data) VALUES ($1, $2)`, s.ID, lockBytes); err != nil {
 				return false, err
 			}
 
@@ -85,7 +91,13 @@ func (l *Lock) Lock(s *terraform.State) (bool, error) {
 		return false, err
 	}
 
-	if string(lock) == string(s.Lock) {
+	var lock terraform.LockInfo
+
+	if err := json.Unmarshal(rawLock, &lock); err != nil {
+		return false, err
+	}
+
+	if lock.Equal(s.Lock) {
 		// you already have the lock
 		return true, nil
 	}
@@ -106,9 +118,9 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 
 	defer tx.Rollback()
 
-	var lock []byte
+	var rawLock []byte
 
-	if err := tx.QueryRow(`SELECT lock_data FROM `+l.table+` WHERE state_id = $1`, s.ID).Scan(&lock); err != nil {
+	if err := tx.QueryRow(`SELECT lock_data FROM `+l.table+` WHERE state_id = $1`, s.ID).Scan(&rawLock); err != nil {
 		if err == sql.ErrNoRows {
 			return false, nil
 		}
@@ -116,11 +128,17 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 		return false, err
 	}
 
-	if string(lock) != string(s.Lock) {
+	var lock terraform.LockInfo
+
+	if err := json.Unmarshal(rawLock, &lock); err != nil {
+		return false, err
+	}
+
+	if !lock.Equal(s.Lock) {
 		return false, nil
 	}
 
-	if _, err := tx.Exec(`DELETE FROM `+l.table+` WHERE state_id = $1 AND lock_data = $2`, s.ID, s.Lock); err != nil {
+	if _, err := tx.Exec(`DELETE FROM `+l.table+` WHERE state_id = $1 AND lock_data = $2`, s.ID, rawLock); err != nil {
 		return false, err
 	}
 
@@ -129,4 +147,23 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (l *Lock) GetLock(s *terraform.State) (terraform.LockInfo, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+
+	var rawLock []byte
+
+	if err := l.db.QueryRowContext(ctx, `SELECT lock_data FROM `+l.table+` WHERE state_id = $1`, s.ID).Scan(&rawLock); err != nil {
+		return terraform.LockInfo{}, err
+	}
+
+	var lock terraform.LockInfo
+
+	if err := json.Unmarshal(rawLock, &lock); err != nil {
+		return terraform.LockInfo{}, err
+	}
+
+	return lock, nil
 }
