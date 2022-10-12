@@ -11,6 +11,7 @@ Supported authentication methods:
 Supported storage backends:
 - local file system
 - S3
+- Postgres
 
 Supported lock backends:
 - local map
@@ -69,3 +70,16 @@ terraform {
 ```
 
 For more information about username and password checkout [docs/auth.md](./docs/auth.md)
+
+## Tests
+
+Run unit tests:
+```sh
+go test ./...
+```
+
+Run integration tests:
+```sh
+docker-compose up -d redis postgres minio
+go test ./... --tags integration -count=1
+```
