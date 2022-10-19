@@ -36,7 +36,7 @@ func NewPostgresStorage(table string) (*PostgresStorage, error) {
 		return nil, fmt.Errorf("checking states table: %w", err)
 	}
 
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint: errcheck
 
 	if _, err := tx.Exec(`CREATE TABLE IF NOT EXISTS ` + p.table + ` (
 			state_id CHARACTER VARYING(255) PRIMARY KEY,
