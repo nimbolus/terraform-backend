@@ -37,7 +37,7 @@ func NewLock(table string) (*Lock, error) {
 		return nil, fmt.Errorf("checking locks table: %w", err)
 	}
 
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint: errcheck
 
 	if _, err := tx.Exec(`CREATE TABLE IF NOT EXISTS ` + l.table + ` (
 			state_id CHARACTER VARYING(255) PRIMARY KEY,
@@ -66,7 +66,7 @@ func (l *Lock) Lock(s *terraform.State) (bool, error) {
 		return false, err
 	}
 
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint: errcheck
 
 	var rawLock []byte
 
@@ -116,7 +116,7 @@ func (l *Lock) Unlock(s *terraform.State) (bool, error) {
 		return false, err
 	}
 
-	defer tx.Rollback()
+	defer tx.Rollback() // nolint: errcheck
 
 	var rawLock []byte
 
