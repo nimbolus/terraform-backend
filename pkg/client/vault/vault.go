@@ -2,7 +2,7 @@ package vault
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/spf13/viper"
@@ -26,7 +26,7 @@ func NewVaultClient() (*vault.Client, error) {
 	if token := viper.GetString("vault_token"); token != "" {
 		client.SetToken(token)
 	} else if role := viper.GetString("vault_kube_auth_role"); role != "" {
-		jwt, err := ioutil.ReadFile(k8sServiceAccountFile)
+		jwt, err := os.ReadFile(k8sServiceAccountFile)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read k8s service account: %w", err)
 		}
