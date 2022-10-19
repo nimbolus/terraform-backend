@@ -20,7 +20,7 @@ Set `STORAGE_BACKEND` to `fs`.
 The S3 backend stores the state files in any S3-compatible object store using the [MinIO SDK](https://docs.min.io/docs/golang-client-quickstart-guide.html). Since locking is handled by the Terraform backend server separately, the S3 API doesn't need support for write-once-read-many (WORM).
 
 ### Config
-Set `STORAGE_BACKEND` to `fs`.
+Set `STORAGE_BACKEND` to `s3`.
 
 | Environment Variable  | Type   | Default            | Description             |
 |-----------------------|--------|--------------------|-------------------------|
