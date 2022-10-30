@@ -47,6 +47,9 @@ func main() {
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/state/{project}/{name}", server.StateHandler(store, locker, kms))
 	r.HandleFunc("/health", server.HealthHandler)
+	r.HandleFunc("/metrics", server.MetricsHandler)
+
+	server.RecordMetrics(store, locker, kms)
 
 	if tlsKey != "" && tlsCert != "" {
 		log.Printf("listening on %s with tls", addr)

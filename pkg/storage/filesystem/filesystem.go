@@ -61,3 +61,18 @@ func (f *FileSystemStorage) DeleteState(id string) error {
 func (f *FileSystemStorage) getFileName(id string) string {
 	return fmt.Sprintf("%s/%s.tfstate", f.directory, id)
 }
+
+func (f *FileSystemStorage) CountStoredObjects() (int, error) {
+	d, err := os.Open(f.directory)
+	if err != nil {
+		return 0, err
+	}
+	defer d.Close()
+
+	list, err := d.Readdirnames(-1)
+	if err != nil {
+		return 0, err
+	}
+
+	return len(list), nil
+}
