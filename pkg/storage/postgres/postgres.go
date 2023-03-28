@@ -3,10 +3,12 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
 	pgclient "github.com/nimbolus/terraform-backend/pkg/client/postgres"
+	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
@@ -70,7 +72,9 @@ func (p *PostgresStorage) GetState(id string) (*terraform.State, error) {
 	s := &terraform.State{}
 
 	err := p.db.QueryRow(`SELECT state_data FROM `+p.table+` WHERE state_id = $1`, id).Scan(&s.Data)
-	if err != nil {
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, storage.ErrStateNotFound
+	} else if err != nil {
 		return nil, err
 	}
 

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/spf13/viper"
@@ -19,6 +20,11 @@ func StorageTest(t *testing.T, s storage.Storage) {
 		Project: "test",
 		Name:    "test",
 		Data:    []byte("test"),
+	}
+
+	nonExisting, err := s.GetState(state.ID)
+	if nonExisting != nil || !errors.Is(err, storage.ErrStateNotFound) {
+		t.Error("non existing state should return ErrStateNotFound")
 	}
 
 	if err := s.SaveState(state); err != nil {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -130,7 +131,11 @@ func Get(w http.ResponseWriter, r *http.Request, state *terraform.State, store s
 	log.Debugf("get state with id %s", state.ID)
 	stateID := state.ID
 	state, err := store.GetState(state.ID)
-	if err != nil {
+	if errors.Is(err, storage.ErrStateNotFound) {
+		log.Debugf("state with id %s does not exist", stateID)
+		HTTPResponse(w, r, http.StatusNotFound, err.Error())
+		return
+	} else if err != nil {
 		log.Warnf("failed to get state with id %s: %v", stateID, err)
 		HTTPResponse(w, r, http.StatusBadRequest, err.Error())
 		return
