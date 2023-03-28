@@ -44,9 +44,30 @@ func main() {
 	tlsKey := viper.GetString("tls_key")
 	tlsCert := viper.GetString("tls_cert")
 
+	viper.SetDefault("metrics_listen_addr", ":8081")
+	metricsAddr := viper.GetString("metrics_listen_addr")
+
 	r := mux.NewRouter().StrictSlash(true)
 	r.HandleFunc("/state/{project}/{name}", server.StateHandler(store, locker, kms))
 	r.HandleFunc("/health", server.HealthHandler)
+
+	if viper.GetString("listen_addr") != viper.GetString("metrics_listen_addr") {
+		metricsRouter := mux.NewRouter().StrictSlash(true)
+		metricsRouter.HandleFunc("/metrics", server.MetricsHandler)
+
+		go func() {
+			log.Printf("listening on %s for metrics", metricsAddr)
+			err = http.ListenAndServe(metricsAddr, metricsRouter)
+			if err != nil {
+				log.Fatalf("failed to listen on %s for metrics: %v", metricsAddr, err)
+			}
+		}()
+	} else {
+		log.Printf("exposing metrics on default endpoint on %s", addr)
+		r.HandleFunc("/metrics", server.MetricsHandler)
+	}
+
+	server.RecordMetrics(store, locker, kms)
 
 	if tlsKey != "" && tlsCert != "" {
 		log.Printf("listening on %s with tls", addr)

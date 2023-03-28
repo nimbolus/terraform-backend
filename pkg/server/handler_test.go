@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -110,6 +111,10 @@ func TestServerHandler(t *testing.T) {
 	simulateLock(t, address, false)
 
 	terraform.ApplyAndIdempotent(t, terraformOptions)
+
+	if err := os.Remove("./handler_test/errored.tfstate"); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func simulateLock(t *testing.T, address string, doLock bool) {

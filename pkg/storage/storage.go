@@ -10,3 +10,7 @@ type Storage interface {
 	GetState(id string) (*terraform.State, error)
 	DeleteState(id string) error
 }
+
+type Countable interface {
+	CountStoredObjects() (int, error)
+}
