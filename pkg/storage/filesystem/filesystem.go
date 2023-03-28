@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
@@ -35,13 +36,7 @@ func (f *FileSystemStorage) SaveState(s *terraform.State) error {
 
 func (f *FileSystemStorage) GetState(id string) (*terraform.State, error) {
 	if _, err := os.Stat(f.getFileName(id)); errors.Is(err, os.ErrNotExist) {
-		f, err := os.Create(f.getFileName(id))
-		if err != nil {
-			return nil, err
-		}
-		defer f.Close()
-
-		return &terraform.State{}, nil
+		return nil, storage.ErrStateNotFound
 	}
 
 	d, err := os.ReadFile(f.getFileName(id))

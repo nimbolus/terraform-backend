@@ -1,7 +1,13 @@
 package storage
 
 import (
+	"errors"
+
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
+)
+
+var (
+	ErrStateNotFound = errors.New("state does not exist")
 )
 
 type Storage interface {

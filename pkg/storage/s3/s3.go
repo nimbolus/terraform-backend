@@ -8,6 +8,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 
+	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
@@ -67,7 +68,7 @@ func (s *S3Storage) GetState(id string) (*terraform.State, error) {
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(obj); err != nil {
 		if minio.ToErrorResponse(err).Code == "NoSuchKey" {
-			return state, nil
+			return nil, storage.ErrStateNotFound
 		}
 		return state, err
 	}
