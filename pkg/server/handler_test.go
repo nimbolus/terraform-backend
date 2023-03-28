@@ -23,8 +23,10 @@ import (
 	tf "github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
-func NewStateHandler(t *testing.T) http.Handler {
-	store, err := filesystem.NewFileSystemStorage(filepath.Join("./handler_test", "storage"))
+var terraformBinary = flag.String("tf", "terraform", "terraform binary")
+
+func NewStateHandler(t *testing.T, baseDir string) http.Handler {
+	store, err := filesystem.NewFileSystemStorage(filepath.Join(baseDir, "storage"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -40,11 +42,9 @@ func NewStateHandler(t *testing.T) http.Handler {
 	return r
 }
 
-var terraformBinary = flag.String("tf", "terraform", "terraform binary")
-
-func terraformOptions(t *testing.T, addr string) *terraform.Options {
+func terraformOptions(t *testing.T, baseDir, addr string) *terraform.Options {
 	return terraform.WithDefaultRetryableErrors(t, &terraform.Options{
-		TerraformDir:    "./handler_test",
+		TerraformDir:    baseDir,
 		TerraformBinary: *terraformBinary,
 		Vars:            map[string]interface{}{},
 		Reconfigure:     true,
@@ -61,7 +61,7 @@ func terraformOptions(t *testing.T, addr string) *terraform.Options {
 }
 
 func TestServerHandler_VerifyLockOnPush(t *testing.T) {
-	s := httptest.NewServer(NewStateHandler(t))
+	s := httptest.NewServer(NewStateHandler(t, "./handler_test"))
 	defer s.Close()
 
 	address, err := url.JoinPath(s.URL, "/state/project1/example")
@@ -72,7 +72,7 @@ func TestServerHandler_VerifyLockOnPush(t *testing.T) {
 	simulateLock(t, address, true)
 
 	for _, doLock := range []bool{true, false} {
-		terraformOptions := terraformOptions(t, address)
+		terraformOptions := terraformOptions(t, "./handler_test", address)
 		terraformOptions.Lock = doLock
 
 		_, err = terraform.InitAndApplyE(t, terraformOptions)
@@ -85,7 +85,7 @@ func TestServerHandler_VerifyLockOnPush(t *testing.T) {
 }
 
 func TestServerHandler(t *testing.T) {
-	s := httptest.NewServer(NewStateHandler(t))
+	s := httptest.NewServer(NewStateHandler(t, "./handler_test"))
 	defer s.Close()
 
 	address, err := url.JoinPath(s.URL, "/state/project1/example")
@@ -93,7 +93,7 @@ func TestServerHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	terraformOptions := terraformOptions(t, address)
+	terraformOptions := terraformOptions(t, "./handler_test", address)
 
 	// Clean up resources with "terraform destroy" at the end of the test.
 	defer terraform.Destroy(t, terraformOptions)
