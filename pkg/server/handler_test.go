@@ -117,6 +117,31 @@ func TestServerHandler(t *testing.T) {
 	}
 }
 
+func TestServerHandler_ForceUnlock(t *testing.T) {
+	s := httptest.NewServer(NewStateHandler(t, "./handler_test"))
+	defer s.Close()
+
+	address, err := url.JoinPath(s.URL, "/state/project1/example")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	terraformOptions := terraformOptions(t, "./handler_test", address)
+
+	terraform.Init(t, terraformOptions)
+
+	simulateLock(t, address, true)
+
+	if _, err := terraform.RunTerraformCommandE(t, terraformOptions, "force-unlock", "-force", "random-id"); err == nil {
+		t.Fatal("expected error")
+	}
+
+	if _, err = terraform.RunTerraformCommandE(t, terraformOptions, "force-unlock", "-force", "cf290ef3-6090-410e-9784-d017a4b1536a"); err == nil {
+		t.Fatal("expected error")
+	}
+
+}
+
 func simulateLock(t *testing.T, address string, doLock bool) {
 	method := "LOCK"
 	if !doLock {
