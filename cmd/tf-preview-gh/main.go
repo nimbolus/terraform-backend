@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"net/http"
@@ -148,15 +149,24 @@ func streamLogs(logsURL *url.URL, skip int64) (int64, error) {
 	return int64(r.readBytes), err
 }
 
-const (
-	owner            = "ffddorf"
-	repo             = "terraform-playground"
-	workflowFilename = "preview.yaml"
+var (
+	owner            string
+	repo             string
+	workflowFilename string
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+
+	flag.StringVar(&owner, "github-owner", "ffddorf", "Repository owner")
+	flag.StringVar(&repo, "github-repo", "", "Repository name")
+	flag.StringVar(&workflowFilename, "workflow-file", "preview.yaml", "Name of the workflow file to run for previews")
+	flag.Parse()
+
+	if repo == "" {
+		panic("Missing flag: -github-repo")
+	}
 
 	serverURL, err := startServer(ctx)
 	if err != nil {
