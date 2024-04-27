@@ -10,6 +10,10 @@ RUN GOOS=linux CGO_ENABLED=1 go build cmd/terraform-backend.go
 # start clean for final image
 FROM debian:12
 
+RUN apt-get -q update && \
+  apt-get -yq install ca-certificates && \
+  apt-get autoclean
+
 COPY --from=builder /go/src/github.com/nimbolus/terraform-backend/terraform-backend /terraform-backend
 
 ENTRYPOINT ["/terraform-backend"]
