@@ -1,5 +1,5 @@
 # build binary
-FROM golang:1.19-alpine AS builder
+FROM golang:1.19 AS builder
 
 COPY . /go/src/github.com/nimbolus/terraform-backend
 
@@ -8,7 +8,7 @@ WORKDIR /go/src/github.com/nimbolus/terraform-backend
 RUN GOOS=linux CGO_ENABLED=1 go build cmd/terraform-backend.go
 
 # start clean for final image
-FROM alpine:3
+FROM debian:12
 
 COPY --from=builder /go/src/github.com/nimbolus/terraform-backend/terraform-backend /terraform-backend
 
