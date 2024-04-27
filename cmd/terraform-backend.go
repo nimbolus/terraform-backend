@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/nimbolus/terraform-backend/pkg/server"
+	"github.com/nimbolus/terraform-backend/pkg/share"
 )
 
 func main() {
@@ -47,7 +48,10 @@ func main() {
 	viper.SetDefault("metrics_listen_addr", ":8081")
 	metricsAddr := viper.GetString("metrics_listen_addr")
 
+	shareServer := share.NewServer()
+
 	r := mux.NewRouter().StrictSlash(true)
+	r.Handle("/state/{project}/{name}/share/{id}", shareServer)
 	r.HandleFunc("/state/{project}/{name}", server.StateHandler(store, locker, kms))
 	r.HandleFunc("/health", server.HealthHandler)
 
