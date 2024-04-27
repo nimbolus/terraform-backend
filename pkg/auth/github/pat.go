@@ -48,6 +48,13 @@ type identity struct {
 }
 
 func (pa *PATAuthenticator) Authenticate(secret string, s *terraform.State) (bool, error) {
+	// check access to repo that matches project in org
+	_, err := makeRequest(fmt.Sprintf("https://api.github.com/repos/%s/%s", pa.org, s.Project), secret)
+	if err == nil {
+		// allow when there is no error
+		return true, nil
+	}
+
 	// check if org matches username
 	resp, err := makeRequest("https://api.github.com/user", secret)
 	if err != nil {
