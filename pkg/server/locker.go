@@ -9,6 +9,7 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/lock/local"
 	"github.com/nimbolus/terraform-backend/pkg/lock/postgres"
 	"github.com/nimbolus/terraform-backend/pkg/lock/redis"
+	"github.com/nimbolus/terraform-backend/pkg/lock/sqlite"
 )
 
 func GetLocker() (l lock.Locker, err error) {
@@ -23,6 +24,9 @@ func GetLocker() (l lock.Locker, err error) {
 	case postgres.Name:
 		viper.SetDefault("lock_postgres_table", "locks")
 		l, err = postgres.NewLock(viper.GetString("lock_postgres_table"))
+	case sqlite.Name:
+		viper.SetDefault("lock_sqlite_file", "./locks.db")
+		l, err = sqlite.NewLock(viper.GetString("lock_sqlite_file"))
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}
