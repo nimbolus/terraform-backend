@@ -1,12 +1,14 @@
 package auth
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/spf13/viper"
 
 	"github.com/nimbolus/terraform-backend/pkg/auth/basic"
+	"github.com/nimbolus/terraform-backend/pkg/auth/github"
 	"github.com/nimbolus/terraform-backend/pkg/auth/jwt"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
@@ -38,6 +40,12 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 			return false, fmt.Errorf("jwt auth is not enabled")
 		}
 		authenticator = jwt.NewJWTAuth(issuerURL)
+	case github.PATName:
+		org := viper.GetString("auth_github_org")
+		if org == "" {
+			return false, errors.New("missing org name for github PAT")
+		}
+		authenticator = github.NewPATAuthenticator(org)
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}
