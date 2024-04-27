@@ -29,5 +29,12 @@ func GetLocker() (l lock.Locker, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize lock backend %s: %v", backend, err)
 	}
+
+	viper.SetDefault("force_unlock_enabled", true)
+
+	if viper.GetBool("force_unlock_enabled") {
+		l = lock.NewLockerWithForceUnlockEnabled(l)
+	}
+
 	return
 }
