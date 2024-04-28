@@ -1,8 +1,8 @@
-name: Build and publish Container Image
+name: Build
 
 on:
   push:
-    branches: ["main"]
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -10,12 +10,13 @@ env:
 
 jobs:
   build-and-push-image:
+    name: Docker Image
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     outputs:
-      imageTag: ${{ steps.meta.outputs.tags }}
+      deployImage: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,7 +42,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=sha
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,priority=850
+            type=ref,event=branch
+            type=ref,event=pr
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -51,17 +57,39 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+
+  cli-binary:
+    name: CLI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    if: github.ref_type == 'tag'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v5
+        with:
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
-    name: Deploy backend
+    name: Deploy Backend
     runs-on: ubuntu-latest
     concurrency: deploy-group # ensure only one action runs at a time
     needs: build-and-push-image
+    if: github.ref_type == 'branch' && github.ref_name == 'main'
     steps:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@1.5
-      - run: flyctl deploy --image ${{ needs.build-and-push-image.outputs.imageTag }}
+      - run: flyctl deploy --image ${{ needs.build-and-push-image.outputs.deployImage }}
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN }}

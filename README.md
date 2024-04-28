@@ -5,20 +5,24 @@ A state backend server which implements the Terraform HTTP backend API with plug
 > :warning: **Disclaimer**: This code is in an early development state and not tested extensively for bugs and security issues. If you find some, please raise an issue or merge request.
 
 Supported authentication methods:
+
 - HTTP basic auth
 - JSON Web Tokens
 
 Supported storage backends:
+
 - local file system
 - S3
 - Postgres
 
 Supported lock backends:
+
 - local map
 - Redis
 - Postgres
 
 Supported KMS (encryption) backends:
+
 - local AES key
 - AES from HashiCorp Vault Key/Value store (v2)
 - HashiCorp Vault Transit engine
@@ -26,11 +30,13 @@ Supported KMS (encryption) backends:
 ## Deployment
 
 Run locally for development:
+
 ```sh
 LOG_LEVEL=debug go run ./cmd/terraform-backend
 ```
 
 or use [docker-compose](./docker-compose.yml):
+
 ```sh
 docker-compose up -d
 ```
@@ -40,7 +46,7 @@ docker-compose up -d
 The following table describes the default configuration, although the backend server will run with these values, it's not scalable and therefore only for testing purposes.
 
 | Environment Variable | Type   | Default    | Description                                                                                       |
-|----------------------|--------|------------|---------------------------------------------------------------------------------------------------|
+| -------------------- | ------ | ---------- | ------------------------------------------------------------------------------------------------- |
 | LOG_LEVEL            | string | `info`     | Log level (options are: `fatal`, `info`, `warning`, `debug`, `trace`)                             |
 | LISTEN_ADDR          | string | `:8080`    | Address the HTTP server listens on                                                                |
 | TLS_KEY              | string | --         | Path to TLS key file for listening with TLS (fallback to HTTP if not specified)                   |
@@ -57,6 +63,7 @@ The following table describes the default configuration, although the backend se
 The path to the state is: `/state/<project-id>/<state-name>`.
 
 **Example Terraform backend configuration**
+
 ```hcl
 terraform {
   backend "http" {
@@ -74,12 +81,41 @@ For more information about username and password checkout [docs/auth.md](./docs/
 ## Tests
 
 Run unit tests:
+
 ```sh
 go test ./...
 ```
 
 Run integration tests:
+
 ```sh
 docker-compose up -d redis postgres minio
 go test ./... --tags integration -count=1
+```
+
+## Speculative Runs in GitHub Actions
+
+This project includes a CLI to trigger speculative runs via GitHub Actions, similar to how Terraform Cloud works.
+
+### Install
+
+To install the binary on your system, download the binary from the latest release and make it executable:
+
+```sh
+curl -L "https://github.com/ffddorf/terraform-backend/releases/latest/download/tf-preview-gh_$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m)" > tf-preview-gh
+sudo mv tf-preview-gh /usr/local/bin/tf-preview-gh
+sudo chmod +x /usr/local/bin/tf-preview-gh
+```
+
+### Usage
+
+Run the CLI in the directory for which you want to run a remote plan.
+
+The tool will pick its context from the environment:
+
+- Address of the Terraform Backend from your backend config
+- Repository to use from the git remote called `origin`
+
+```
+tf-preview-gh
 ```

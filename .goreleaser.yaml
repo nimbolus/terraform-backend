@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+builds:
+  - id: tf-preview-gh
+    main: ./cmd/tf-preview-gh
+    binary: tf-preview-gh
+
+    env:
+      - CGO_ENABLED=0
+
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - id: tf-preview-gh
+    builds:
+      - tf-preview-gh
+    format: binary
+    name_template: >-
+      {{ .Binary }}_{{ .Os }}-
+      {{- if eq .Arch "arm64" -}}
+        {{- if eq .Os "linux" -}}
+          aarch64
+        {{- else -}}
+          {{ .Arch }}
+        {{- end -}}
+      {{- else if eq .Arch "amd64" -}}
+          x86_64
+      {{- else -}}
+        {{ .Arch }}
+      {{- end }}
+
+checksum:
+  name_template: "checksums.txt"
+
+release:
+  prerelease: auto

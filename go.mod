@@ -1,6 +1,7 @@
 module github.com/nimbolus/terraform-backend
 
-go 1.22
+// warning: upgrading this might break the release flow (xgo)
+go 1.21
 
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
