@@ -1,5 +1,5 @@
 # build binary
-FROM golang:1.19 AS builder
+FROM golang:1.22 AS builder
 
 COPY . /go/src/github.com/nimbolus/terraform-backend
 
