@@ -1,15 +1,15 @@
-package terraform_test
+package tfcontext_test
 
 import (
 	"testing"
 
-	"github.com/ffddorf/tf-preview-github/pkg/terraform"
+	"github.com/ffddorf/tf-preview-github/pkg/tfcontext"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestFindBackend(t *testing.T) {
-	be, err := terraform.FindBackend("./testdata")
+	be, err := tfcontext.FindBackend("./testdata")
 	require.NoError(t, err)
 
 	assert.Equal(t, "https://dummy-backend.example.com/state", be.Address)

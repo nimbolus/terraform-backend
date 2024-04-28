@@ -19,7 +19,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	"github.com/ffddorf/tf-preview-github/pkg/terraform"
+	"github.com/ffddorf/tf-preview-github/pkg/tfcontext"
 	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v57/github"
 	"github.com/google/uuid"
@@ -33,7 +33,7 @@ func serveWorkspace(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	backend, err := terraform.FindBackend(cwd)
+	backend, err := tfcontext.FindBackend(cwd)
 	if err != nil {
 		return "", err
 	}
