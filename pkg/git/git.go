@@ -1,4 +1,4 @@
-package speculative
+package git
 
 import (
 	"errors"
@@ -9,7 +9,7 @@ import (
 	giturls "github.com/whilp/git-urls"
 )
 
-func gitRepoOrigin() (*url.URL, error) {
+func RepoOrigin() (*url.URL, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err

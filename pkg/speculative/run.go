@@ -10,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/google/go-github/v61/github"
+	"github.com/nimbolus/terraform-backend/pkg/git"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +38,7 @@ func NewCommand() *cobra.Command {
 
 func run(ctx context.Context) error {
 	if owner == "" || repo == "" {
-		if ghURL, err := gitRepoOrigin(); err == nil {
+		if ghURL, err := git.RepoOrigin(); err == nil {
 			parts := strings.Split(ghURL.Path, "/")
 			if len(parts) >= 2 {
 				owner = parts[0]
