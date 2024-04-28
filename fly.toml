@@ -1,0 +1,25 @@
+app = 'ffddorf-terraform-backend'
+primary_region = 'ams'
+
+[mounts]
+source = "ffddorf_terraform_data"
+destination = "/data"
+
+[env]
+STORAGE_FS_DIR = "/data/states"
+LOCK_BACKEND = "sqlite"
+LOCK_SQLITE_FILE = "/data/locks.db"
+AUTH_GITHUB_ORG = "ffddorf"
+
+[http_service]
+internal_port = 8080
+force_https = true
+auto_stop_machines = true
+auto_start_machines = true
+min_machines_running = 0
+processes = ['app']
+
+[[vm]]
+memory = '256mb'
+cpu_kind = 'shared'
+cpus = 1
