@@ -3,5 +3,9 @@
   "extends": [
     "config:recommended"
   ],
-  "includeForks": true
+  "includeForks": true,
+  "postUpdateOptions": [
+    "gomodUpdateImportPaths",
+    "gomodTidy"
+  ]
 }
