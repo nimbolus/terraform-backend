@@ -1,6 +1,6 @@
 module github.com/nimbolus/terraform-backend
 
-go 1.22
+go 1.21
 
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
