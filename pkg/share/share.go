@@ -113,10 +113,13 @@ func (s *Server) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		<-done
-
-		rw.WriteHeader(http.StatusAccepted)
-		return
+		select {
+		case <-req.Context().Done():
+			return
+		case <-done:
+			rw.WriteHeader(http.StatusAccepted)
+			return
+		}
 	}
 
 	server.HTTPResponse(rw, req, http.StatusMethodNotAllowed, "invalid method, expected GET or POST")
