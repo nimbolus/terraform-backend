@@ -5,7 +5,7 @@ go 1.21
 
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/coreos/go-oidc/v3 v3.9.0
+	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/go-redsync/redsync/v4 v4.11.0
 	github.com/gomodule/redigo v1.8.9
