@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -11,81 +12,73 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"slices"
 	"strings"
 	"syscall"
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/ffddorf/tf-preview-github/pkg/terraform"
 	"github.com/google/go-github/v57/github"
+	"github.com/google/uuid"
 	"github.com/hashicorp/go-slug"
-	"golang.ngrok.com/ngrok"
-	"golang.ngrok.com/ngrok/config"
 )
 
-type LocalContent struct {
-	dir string
-}
-
-func (c *LocalContent) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	rw.Header().Set("Content-Type", "application/octet-stream")
-
-	_, err := slug.Pack(c.dir, rw, true)
-	if err != nil {
-		fmt.Printf("failed to pack contents: %+v\n", err)
-		return
-	}
-
-	fmt.Println("workspace was downloaded")
-}
-
-func startServer(ctx context.Context) (string, error) {
-	listenerCtx, cancelListener := context.WithCancel(context.Background())
-
-	connected := make(chan struct{})
-	go func() {
-		select {
-		case <-connected:
-		case <-time.After(10 * time.Second):
-			cancelListener()
-		}
-	}()
-
-	listener, err := ngrok.Listen(listenerCtx, config.HTTPEndpoint(), ngrok.WithAuthtokenFromEnv())
-	if err != nil {
-		return "", err
-	}
-	close(connected)
-
+func serveWorkspace(ctx context.Context) (string, error) {
 	cwd, err := os.Getwd()
 	if err != nil {
-		listener.Close()
 		return "", err
 	}
-	handler := &LocalContent{
-		dir: cwd,
+
+	backend, err := terraform.FindBackend(cwd)
+	if err != nil {
+		return "", err
+	}
+	backendURL, err := url.Parse(backend.Address)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse backend url: %s, %w", backend.Address, err)
+	}
+	if backend.Password == "" {
+		backendPassword, ok := os.LookupEnv("TF_HTTP_PASSWORD")
+		if !ok || backendPassword == "" {
+			return "", errors.New("missing backend password")
+		}
+		backend.Password = backendPassword
 	}
 
-	server := &http.Server{
-		Handler: handler,
+	id := uuid.New()
+	backendURL.Path = filepath.Join(backendURL.Path, "/share/", id.String())
+
+	pr, pw := io.Pipe()
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, backendURL.String(), pr)
+	if err != nil {
+		return "", err
 	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.SetBasicAuth(backend.Username, backend.Password)
 
 	go func() {
-		<-ctx.Done()
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			fmt.Printf("failed to shutdown server: %+v\n", err)
+		_, err := slug.Pack(cwd, pw, true)
+		if err != nil {
+			fmt.Printf("failed to pack workspace: %v\n", err)
+			pw.CloseWithError(err)
+		} else {
+			pw.Close()
 		}
 	}()
 
 	go func() {
-		if err := server.Serve(listener); err != http.ErrServerClosed {
-			fmt.Printf("server failed: %+v\n", err)
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			fmt.Printf("failed to stream workspace: %v\n", err)
+		} else if resp.StatusCode/100 != 2 {
+			fmt.Printf("invalid status code after streaming workspace: %d\n", resp.StatusCode)
 		}
+		fmt.Println("done streaming workspace")
 	}()
 
-	return listener.URL(), nil
+	return backendURL.String(), nil
 }
 
 type countingReader struct {
@@ -168,7 +161,7 @@ func main() {
 		panic("Missing flag: -github-repo")
 	}
 
-	serverURL, err := startServer(ctx)
+	serverURL, err := serveWorkspace(ctx)
 	if err != nil {
 		panic(err)
 	}
