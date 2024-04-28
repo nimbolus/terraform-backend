@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -11,11 +10,13 @@ import (
 )
 
 func main() {
+	rootCmd := speculative.NewCommand()
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	if err := speculative.Run(ctx); err != nil {
-		fmt.Println(err.Error())
+	err := rootCmd.ExecuteContext(ctx)
+	if err != nil {
 		os.Exit(1)
 	}
 }

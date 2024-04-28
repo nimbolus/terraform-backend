@@ -3,7 +3,6 @@ package speculative
 import (
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/google/go-github/v61/github"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -19,12 +19,23 @@ var (
 	workflowFilename string
 )
 
-func Run(ctx context.Context) error {
-	flag.StringVar(&owner, "github-owner", "", "Repository owner")
-	flag.StringVar(&repo, "github-repo", "", "Repository name")
-	flag.StringVar(&workflowFilename, "workflow-file", "preview.yaml", "Name of the workflow file to run for previews")
-	flag.Parse()
+func NewCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "tf-preview-gh",
+		Short: "Schedules speculative terraform runs on GitHub Actions",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return run(cmd.Context())
+		},
+	}
 
+	cmd.Flags().StringVar(&owner, "github-owner", "", "Repository owner")
+	cmd.Flags().StringVar(&repo, "github-repo", "", "Repository name")
+	cmd.Flags().StringVar(&workflowFilename, "workflow-file", "preview.yaml", "Name of the workflow file to run for previews")
+
+	return cmd
+}
+
+func run(ctx context.Context) error {
 	if owner == "" || repo == "" {
 		if ghURL, err := gitRepoOrigin(); err == nil {
 			parts := strings.Split(ghURL.Path, "/")
