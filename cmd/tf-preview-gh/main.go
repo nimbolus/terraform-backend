@@ -20,9 +20,11 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/ffddorf/tf-preview-github/pkg/terraform"
+	"github.com/go-git/go-git/v5"
 	"github.com/google/go-github/v57/github"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-slug"
+	giturls "github.com/whilp/git-urls"
 )
 
 func serveWorkspace(ctx context.Context) (string, error) {
@@ -148,15 +150,59 @@ var (
 	workflowFilename string
 )
 
+func gitRepoOrigin() (*url.URL, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+
+	repo, err := git.PlainOpen(cwd)
+	if err != nil {
+		return nil, err
+	}
+
+	orig, err := repo.Remote("origin")
+	if err != nil {
+		return nil, err
+	}
+	if orig == nil {
+		return nil, errors.New("origin remote not present")
+	}
+
+	for _, u := range orig.Config().URLs {
+		remoteURL, err := giturls.Parse(u)
+		if err != nil {
+			continue
+		}
+		if remoteURL.Hostname() == "github.com" {
+			return remoteURL, nil
+		}
+	}
+	return nil, errors.New("no suitable url found")
+}
+
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	flag.StringVar(&owner, "github-owner", "ffddorf", "Repository owner")
+	flag.StringVar(&owner, "github-owner", "", "Repository owner")
 	flag.StringVar(&repo, "github-repo", "", "Repository name")
 	flag.StringVar(&workflowFilename, "workflow-file", "preview.yaml", "Name of the workflow file to run for previews")
 	flag.Parse()
 
+	if owner == "" || repo == "" {
+		if ghURL, err := gitRepoOrigin(); err == nil {
+			parts := strings.Split(ghURL.Path, "/")
+			if len(parts) >= 2 {
+				owner = parts[0]
+				repo = strings.TrimSuffix(parts[1], ".git")
+				fmt.Printf("Using local repo info: %s/%s\n", owner, repo)
+			}
+		}
+	}
+	if owner == "" {
+		panic("Missing flag: -github-owner")
+	}
 	if repo == "" {
 		panic("Missing flag: -github-repo")
 	}
