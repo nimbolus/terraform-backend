@@ -1,5 +1,6 @@
 module github.com/nimbolus/terraform-backend
 
+// warning: upgrading this might break the release flow (xgo)
 go 1.21
 
 require (
