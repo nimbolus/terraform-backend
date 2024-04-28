@@ -33,4 +33,4 @@ go.work
 
 .vscode
 .env
-terraform-backend
+/terraform-backend

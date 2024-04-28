@@ -27,7 +27,7 @@ Supported KMS (encryption) backends:
 
 Run locally for development:
 ```sh
-LOG_LEVEL=debug go run cmd/terraform-backend.go
+LOG_LEVEL=debug go run ./cmd/terraform-backend
 ```
 
 or use [docker-compose](./docker-compose.yml):
@@ -37,7 +37,7 @@ docker-compose up -d
 
 ### Default settings
 
-The following table describes the default configuration, although the backend server will run with these values, it's not scalable and therefore only for testing purposes. 
+The following table describes the default configuration, although the backend server will run with these values, it's not scalable and therefore only for testing purposes.
 
 | Environment Variable | Type   | Default    | Description                                                                                       |
 |----------------------|--------|------------|---------------------------------------------------------------------------------------------------|
