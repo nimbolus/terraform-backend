@@ -19,7 +19,7 @@ import (
 func TestStateMigration(t *testing.T) {
 	baseDir := "./state_migration_test"
 
-	s := httptest.NewServer(NewStateHandler(t, baseDir))
+	s := httptest.NewServer(NewStateHandler(t, baseDir, true))
 	defer s.Close()
 
 	address, err := url.JoinPath(s.URL, "/state/project1/example")

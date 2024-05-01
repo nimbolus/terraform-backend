@@ -18,6 +18,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/terraform"
 
 	localkms "github.com/nimbolus/terraform-backend/pkg/kms/local"
+	"github.com/nimbolus/terraform-backend/pkg/lock"
 	locallock "github.com/nimbolus/terraform-backend/pkg/lock/local"
 	"github.com/nimbolus/terraform-backend/pkg/storage/filesystem"
 	tf "github.com/nimbolus/terraform-backend/pkg/terraform"
@@ -25,13 +26,16 @@ import (
 
 var terraformBinary = flag.String("tf", "terraform", "terraform binary")
 
-func NewStateHandler(t *testing.T, baseDir string) http.Handler {
+func NewStateHandler(t *testing.T, baseDir string, forceUnlockEnabled bool) http.Handler {
 	store, err := filesystem.NewFileSystemStorage(filepath.Join(baseDir, "storage"))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	locker := locallock.NewLock()
+	var locker lock.Locker = locallock.NewLock()
+	if forceUnlockEnabled {
+		locker = lock.NewLockerWithForceUnlockEnabled(locker)
+	}
 
 	key := "x8DiIkAKRQT7cF55NQLkAZk637W3bGVOUjGeMX5ZGXY="
 	kms, _ := localkms.NewKMS(key)
@@ -61,7 +65,7 @@ func terraformOptions(t *testing.T, baseDir, addr string) *terraform.Options {
 }
 
 func TestServerHandler_VerifyLockOnPush(t *testing.T) {
-	s := httptest.NewServer(NewStateHandler(t, "./handler_test"))
+	s := httptest.NewServer(NewStateHandler(t, "./handler_test", true))
 	defer s.Close()
 
 	address, err := url.JoinPath(s.URL, "/state/project1/example")
@@ -85,7 +89,7 @@ func TestServerHandler_VerifyLockOnPush(t *testing.T) {
 }
 
 func TestServerHandler(t *testing.T) {
-	s := httptest.NewServer(NewStateHandler(t, "./handler_test"))
+	s := httptest.NewServer(NewStateHandler(t, "./handler_test", true))
 	defer s.Close()
 
 	address, err := url.JoinPath(s.URL, "/state/project1/example")
@@ -115,6 +119,48 @@ func TestServerHandler(t *testing.T) {
 	if err := os.Remove("./handler_test/errored.tfstate"); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestServerHandler_ForceUnlock_Enabled(t *testing.T) {
+	s := httptest.NewServer(NewStateHandler(t, "./handler_test", true))
+	defer s.Close()
+
+	address, err := url.JoinPath(s.URL, "/state/project1/example")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	terraformOptions := terraformOptions(t, "./handler_test", address)
+
+	terraform.Init(t, terraformOptions)
+
+	simulateLock(t, address, true)
+
+	if _, err := terraform.RunTerraformCommandE(t, terraformOptions, "force-unlock", "-force", "cf290ef3-6090-410e-9784-d017a4b1536a"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestServerHandler_ForceUnlock_Disabled(t *testing.T) {
+	s := httptest.NewServer(NewStateHandler(t, "./handler_test", false))
+	defer s.Close()
+
+	address, err := url.JoinPath(s.URL, "/state/project1/example")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	terraformOptions := terraformOptions(t, "./handler_test", address)
+
+	terraform.Init(t, terraformOptions)
+
+	simulateLock(t, address, true)
+
+	if _, err := terraform.RunTerraformCommandE(t, terraformOptions, "force-unlock", "-force", "cf290ef3-6090-410e-9784-d017a4b1536a"); err == nil {
+		t.Fatal("expected error")
+	}
+
+	simulateLock(t, address, false)
 }
 
 func simulateLock(t *testing.T, address string, doLock bool) {
