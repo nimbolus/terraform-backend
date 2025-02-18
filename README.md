@@ -39,19 +39,20 @@ docker-compose up -d
 
 The following table describes the default configuration, although the backend server will run with these values, it's not scalable and therefore only for testing purposes. 
 
-| Environment Variable   | Type   | Default    | Description                                                                                                    |
-|------------------------|--------|------------|----------------------------------------------------------------------------------------------------------------|
-| LOG_LEVEL              | string | `info`     | Log level (options are: `fatal`, `info`, `warning`, `debug`, `trace`)                                          |
-| LISTEN_ADDR            | string | `:8080`    | Address the HTTP server listens on                                                                             |
-| TLS_KEY                | string | --         | Path to TLS key file for listening with TLS (fallback to HTTP if not specified)                                |
-| TLS_CERT               | string | --         | Path to TLS certificate file for listening with TLS (fallback to HTTP if not specified)                        |
-| STORAGE_BACKEND        | string | `fs`       | Module for state file storage (checkout [docs/storage.md](./docs/storage.md) for other options)                |
-| STORAGE_FS_DIR         | string | `./states` | File system directory for `fs` storage module to store state files                                             |
-| KMS_BACKEND            | string | `local`    | Module used for encryption (checkout [docs/kms.md](./docs/kms.md) for other options)                           |
-| KMS_KEY                | string | --         | Key for `local` KMS module, if not defined, the server will generate a new one and exit                        |
-| LOCK_BACKEND           | string | `local`    | Module used for locking the state (checkout [docs/lock.md](./docs/lock.md) for other options)                  |
-| AUTH_BASIC_ENABLED     | bool   | `true`     | HTTP basic auth is enabled by default (checkout [docs/auth.md](./docs/auth.md) for other options)              |
-| FORCE_UNLOCK_ENABLED   | bool   | `true`     | Force-unlock feature enables the native Terraform behavior which unlocks the state even if no lock id was sent |
+| Environment Variable | Type   | Default    | Description                                                                                                          |
+|----------------------|--------|------------|----------------------------------------------------------------------------------------------------------------------|
+| LOG_LEVEL            | string | `info`     | Log level (options are: `fatal`, `info`, `warning`, `debug`, `trace`)                                                |
+| LISTEN_ADDR          | string | `:8080`    | Address the HTTP server listens on                                                                                   |
+| TLS_KEY              | string | --         | Path to TLS key file for listening with TLS (fallback to HTTP if not specified)                                      |
+| TLS_CERT             | string | --         | Path to TLS certificate file for listening with TLS (fallback to HTTP if not specified)                              |
+| STORAGE_BACKEND      | string | `fs`       | Module for state file storage (checkout [docs/storage.md](./docs/storage.md) for other options)                      |
+| STORAGE_FS_DIR       | string | `./states` | File system directory for `fs` storage module to store state files                                                   |
+| KMS_BACKEND          | string | `local`    | Module used for encryption (checkout [docs/kms.md](./docs/kms.md) for other options)                                 |
+| KMS_KEY              | string | --         | Key for `local` KMS module. If neither this nor KMS_KEY_FILE is defined, the server will generate a new one and exit |
+| KMS_KEY_FILE         | string | --         | file containing the value for KMS_KEY, will take precedence.                                                         |
+| LOCK_BACKEND         | string | `local`    | Module used for locking the state (checkout [docs/lock.md](./docs/lock.md) for other options)                        |
+| AUTH_BASIC_ENABLED   | bool   | `true`     | HTTP basic auth is enabled by default (checkout [docs/auth.md](./docs/auth.md) for other options)                    |
+| FORCE_UNLOCK_ENABLED | bool   | `true`     | Force-unlock feature enables the native Terraform behavior which unlocks the state even if no lock id was sent       |
 
 ## Usage
 

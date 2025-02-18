@@ -14,6 +14,7 @@ Set `KMS_BACKEND` to `local`.
 | Environment Variable | Type   | Example                                        | Description                                                                                 |
 |----------------------|--------|------------------------------------------------|---------------------------------------------------------------------------------------------|
 | KMS_KEY              | string | `jwS6UpASMOWpEmFn7C6I47BlmPt4cpdmYLKd2E7a4Zk=` | If local KMS is enabled, but no key is defined, the server will generate a new one and exit |
+| KMS_KEY_FILE         | string | `/run/secrets/kms_key                          | file containing the value for KMS_KEY, will take precedence                                 |
 
 ## Key from Vault Key/Value Secrets Engine
 

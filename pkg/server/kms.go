@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	"github.com/nimbolus/terraform-backend/internal"
 	vaultclient "github.com/nimbolus/terraform-backend/pkg/client/vault"
 	"github.com/nimbolus/terraform-backend/pkg/kms"
 	"github.com/nimbolus/terraform-backend/pkg/kms/local"
@@ -17,7 +18,11 @@ func GetKMS() (k kms.KMS, err error) {
 
 	switch backend {
 	case local.Name:
-		key := viper.GetString("kms_key")
+		key, secretErr := internal.SecretEnvOrFile("kms_key", "kms_key_file")
+		if secretErr != nil {
+			return nil, fmt.Errorf("getting kms key: %w", secretErr)
+		}
+
 		if key == "" {
 			key, _ = local.GenerateKey()
 			return nil, fmt.Errorf("no key for local KMS defined, set KMS_KEY (e.g. to this generated key: %s)", key)
