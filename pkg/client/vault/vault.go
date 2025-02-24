@@ -6,6 +6,8 @@ import (
 
 	vault "github.com/hashicorp/vault/api"
 	"github.com/spf13/viper"
+
+	"github.com/nimbolus/terraform-backend/internal"
 )
 
 const (
@@ -23,7 +25,12 @@ func NewVaultClient() (*vault.Client, error) {
 		return nil, fmt.Errorf("unable to initialize vault client: %w", err)
 	}
 
-	if token := viper.GetString("vault_token"); token != "" {
+	token, err := internal.SecretEnvOrFile("vault_token", "vault_token_file")
+	if err != nil {
+		return nil, fmt.Errorf("getting vault token: %w", err)
+	}
+
+	if token != "" {
 		client.SetToken(token)
 	} else if role := viper.GetString("vault_kube_auth_role"); role != "" {
 		jwt, err := os.ReadFile(k8sServiceAccountFile)

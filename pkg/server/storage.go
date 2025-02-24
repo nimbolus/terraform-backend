@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/viper"
 
+	"github.com/nimbolus/terraform-backend/internal"
 	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/storage/filesystem"
 	"github.com/nimbolus/terraform-backend/pkg/storage/postgres"
@@ -30,7 +31,12 @@ func GetStorage() (s storage.Storage, err error) {
 		endpoint := viper.GetString("storage_s3_endpoint")
 		useSSL := viper.GetBool("storage_s3_use_ssl")
 		accessKey := viper.GetString("storage_s3_access_key")
-		secretKey := viper.GetString("storage_s3_secret_key")
+
+		secretKey, secretErr := internal.SecretEnvOrFile("storage_s3_secret_key", "storage_s3_secret_key_file")
+		if secretErr != nil {
+			return nil, fmt.Errorf("getting storage s3 secret key: %w", secretErr)
+		}
+
 		bucket := viper.GetString("storage_s3_bucket")
 
 		s, err = s3.NewS3Storage(endpoint, bucket, accessKey, secretKey, useSSL)

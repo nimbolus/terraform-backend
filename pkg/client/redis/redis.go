@@ -1,10 +1,13 @@
 package redis
 
 import (
+	"fmt"
 	"time"
 
 	redigo "github.com/gomodule/redigo/redis"
 	"github.com/spf13/viper"
+
+	"github.com/nimbolus/terraform-backend/internal"
 )
 
 func NewPool() *redigo.Pool {
@@ -23,7 +26,11 @@ func NewPool() *redigo.Pool {
 				return nil, err
 			}
 
-			pass := viper.GetString("redis_password")
+			pass, err := internal.SecretEnvOrFile("redis_password", "redis_password_file")
+			if err != nil {
+				return nil, fmt.Errorf("getting redis password: %w", err)
+			}
+
 			if pass != "" {
 				if _, err := c.Do("AUTH"); err != nil {
 					c.Close()

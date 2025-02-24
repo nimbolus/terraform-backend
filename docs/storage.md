@@ -22,13 +22,14 @@ The S3 backend stores the state files in any S3-compatible object store using th
 ### Config
 Set `STORAGE_BACKEND` to `s3`.
 
-| Environment Variable  | Type   | Default            | Description             |
-|-----------------------|--------|--------------------|-------------------------|
-| STORAGE_S3_ENDPOINT   | string | `s3.amazonaws.com` | S3 endpoint             |
-| STORAGE_S3_USE_SSL    | string | `true`             | Use SSL for S3 endpoint |
-| STORAGE_S3_ACCESS_KEY | string | --                 | S3 Access key ID        |
-| STORAGE_S3_SECRET_KEY | string | --                 | S3 Secret key           |
-| STORAGE_S3_BUCKET     | string | `terraform-state`  | Name of the S3 bucket   |
+| Environment Variable       | Type   | Default            | Description                                                               |
+|----------------------------|--------|--------------------|---------------------------------------------------------------------------|
+| STORAGE_S3_ENDPOINT        | string | `s3.amazonaws.com` | S3 endpoint                                                               |
+| STORAGE_S3_USE_SSL         | string | `true`             | Use SSL for S3 endpoint                                                   |
+| STORAGE_S3_ACCESS_KEY      | string | --                 | S3 Access key ID                                                          |
+| STORAGE_S3_SECRET_KEY      | string | --                 | S3 Secret key                                                             |
+| STORAGE_S3_SECRET_KEY_FILE | string | --                 | file containing the value for STORAGE_S3_SECRET_KEY, will take precedence |
+| STORAGE_S3_BUCKET          | string | `terraform-state`  | Name of the S3 bucket                                                     |
 
 
 ## Postgres
