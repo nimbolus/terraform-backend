@@ -12,11 +12,13 @@ const Name = "jwt"
 
 type JWTAuth struct {
 	issuerURL string
+	clientID  string
 }
 
-func NewJWTAuth(issuerURL string) *JWTAuth {
+func NewJWTAuth(issuerURL string, clientID string) *JWTAuth {
 	return &JWTAuth{
 		issuerURL: issuerURL,
+		clientID:  clientID,
 	}
 }
 
@@ -31,7 +33,7 @@ func (b *JWTAuth) Authenticate(secret string, s *terraform.State) (bool, error) 
 	}
 
 	verifier := provider.Verifier(&oidc.Config{
-		SkipClientIDCheck: true,
+		ClientID: b.clientID,
 	})
 
 	token, err := verifier.Verify(context.Background(), secret)
