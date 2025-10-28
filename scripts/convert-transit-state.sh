@@ -1,4 +1,4 @@
-#?/usr/bin/env bash
+#!/usr/bin/env bash
 
 # This scripts converts a state which was encrypted with the Vault Transit engine
 # so that it can be uncrypted by the local KMS module
