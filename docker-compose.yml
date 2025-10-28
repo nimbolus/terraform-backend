@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   terraform_backend:
     image: ghcr.io/nimbolus/terraform-backend
@@ -15,7 +13,7 @@ services:
       - "127.0.0.1:8081:8081"
     volumes:
       - states:/states
-    links:
+    depends_on:
       - redis
   redis:
     image: redis:alpine
@@ -37,6 +35,23 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+  openbao:
+    image: ghcr.io/openbao/openbao
+    command: server -dev -dev-root-token-id="dev-only-token"
+    ports:
+      - "8200:8200"
+  openbao-init:
+    image: ghcr.io/openbao/openbao
+    volumes:
+      - ./scripts/dev-openbao-init.sh:/dev-openbao-init.sh
+    depends_on:
+      - openbao
+    entrypoint: /bin/sh
+    command: /dev-openbao-init.sh dev-only-token
+    environment:
+      BAO_ADDR: http://openbao:8200
+    restart: on-failure
+    stop_grace_period: 100ms
 
 volumes:
   states:

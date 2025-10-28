@@ -37,7 +37,7 @@ docker-compose up -d
 
 ### Default settings
 
-The following table describes the default configuration, although the backend server will run with these values, it's not scalable and therefore only for testing purposes. 
+The following table describes the default configuration, although the backend server will run with these values, it's not scalable and therefore only for testing purposes.
 
 | Environment Variable | Type   | Default    | Description                                                                                                          |
 |----------------------|--------|------------|----------------------------------------------------------------------------------------------------------------------|
@@ -82,6 +82,6 @@ go test ./...
 
 Run integration tests:
 ```sh
-docker-compose up -d redis postgres minio
+docker-compose up -d redis postgres minio openbao openbao-init
 go test ./... --tags integration -count=1
 ```
