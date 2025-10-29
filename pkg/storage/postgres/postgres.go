@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	pgclient "github.com/nimbolus/terraform-backend/pkg/client/postgres"
 	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
@@ -19,12 +18,7 @@ type PostgresStorage struct {
 	table string
 }
 
-func NewPostgresStorage(table string) (*PostgresStorage, error) {
-	db, err := pgclient.NewClient()
-	if err != nil {
-		return nil, err
-	}
-
+func NewPostgresStorage(db *sql.DB, table string) (*PostgresStorage, error) {
 	p := &PostgresStorage{
 		db:    db,
 		table: table,
@@ -59,9 +53,8 @@ func (p *PostgresStorage) GetName() string {
 }
 
 func (p *PostgresStorage) SaveState(s *terraform.State) error {
-	if _, err := p.db.Exec(`INSERT INTO `+p.table+` (state_id, state_data) VALUES ($1, $2) 
+	if _, err := p.db.Exec(`INSERT INTO `+p.table+` (state_id, state_data) VALUES ($1, $2)
 		ON CONFLICT (state_id) DO UPDATE SET state_data = EXCLUDED.state_data`, s.ID, s.Data); err != nil {
-
 		return err
 	}
 

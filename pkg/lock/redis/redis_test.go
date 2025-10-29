@@ -1,30 +1,23 @@
-//go:build integration || redis
-// +build integration redis
-
 package redis
 
 import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 
+	"github.com/nimbolus/terraform-backend/pkg/client/redis/redistest"
 	"github.com/nimbolus/terraform-backend/pkg/lock/util"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
-func init() {
-	viper.AutomaticEnv()
-}
-
 func TestLock(t *testing.T) {
-	l := NewLock()
+	l := NewLock(redistest.NewPoolIfIntegrationTest(t))
 
 	util.LockTest(t, l)
 }
 
 func TestGetLock(t *testing.T) {
-	l := NewLock()
+	l := NewLock(redistest.NewPoolIfIntegrationTest(t))
 
 	expectedLock := uuid.New().String()
 

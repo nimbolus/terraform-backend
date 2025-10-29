@@ -20,12 +20,12 @@ func NewJWTAuth(issuerURL string) *JWTAuth {
 	}
 }
 
-func (l *JWTAuth) GetName() string {
+func (j *JWTAuth) GetName() string {
 	return Name
 }
 
-func (b *JWTAuth) Authenticate(secret string, s *terraform.State) (bool, error) {
-	provider, err := oidc.NewProvider(context.Background(), b.issuerURL)
+func (j *JWTAuth) Authenticate(secret string, s *terraform.State) (bool, error) {
+	provider, err := oidc.NewProvider(context.Background(), j.issuerURL)
 	if err != nil {
 		return false, err
 	}

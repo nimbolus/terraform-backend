@@ -4,14 +4,10 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
-
-func init() {
-	viper.AutomaticEnv()
-}
 
 func TestAuth(t *testing.T) {
 	a := NewBasicAuth()
@@ -27,15 +23,7 @@ func TestAuth(t *testing.T) {
 	}
 
 	ok, err := a.Authenticate(secret, state)
-	if err != nil {
-		t.Errorf("authenticating: %v", err)
-	}
-
-	if !ok {
-		t.Errorf("authentication failed")
-	}
-
-	if state.ID == terraform.GetStateID(project, name) {
-		t.Errorf("state.ID should have been changed")
-	}
+	require.NoError(t, err)
+	require.True(t, ok)
+	require.NotEqual(t, state.ID, terraform.GetStateID(project, name))
 }

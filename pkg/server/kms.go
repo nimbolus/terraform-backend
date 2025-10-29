@@ -44,7 +44,12 @@ func GetKMS() (k kms.KMS, err error) {
 
 		k, err = local.NewKMS(key)
 	case transit.Name:
-		k, err = transit.NewVaultTransit(viper.GetString("kms_transit_engine"), viper.GetString("kms_transit_key"))
+		vaultClient, err := vaultclient.NewVaultClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to setup Vault client for Vault KMS: %v", err)
+		}
+
+		k = transit.NewVaultTransit(vaultClient, viper.GetString("kms_transit_engine"), viper.GetString("kms_transit_key"))
 	default:
 		return nil, fmt.Errorf("failed to initialize KMS backend %s: %v", backend, err)
 	}

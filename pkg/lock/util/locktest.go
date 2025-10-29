@@ -5,15 +5,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/spf13/viper"
 
 	"github.com/nimbolus/terraform-backend/pkg/lock"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
 func LockTest(t *testing.T, l lock.Locker) {
-	viper.AutomaticEnv()
-
 	t.Log(l.GetName())
 
 	s1 := terraform.State{

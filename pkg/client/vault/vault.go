@@ -40,7 +40,7 @@ func NewVaultClient() (*vault.Client, error) {
 
 		viper.SetDefault("vault_kube_auth_name", "kubernetes")
 		path := fmt.Sprintf("auth/%s/login", viper.GetString("vault_kube_auth_name"))
-		params := map[string]interface{}{
+		params := map[string]any{
 			"jwt":  string(jwt),
 			"role": role,
 		}
@@ -63,7 +63,7 @@ func GetKvValue(client *vault.Client, path string, value string) (string, error)
 		return "", fmt.Errorf("failed to get vault secret at %s: %v", path, err)
 	}
 
-	data, ok := secret.Data["data"].(map[string]interface{})
+	data, ok := secret.Data["data"].(map[string]any)
 	if !ok {
 		return "", fmt.Errorf("failed to get vault secret data")
 	}

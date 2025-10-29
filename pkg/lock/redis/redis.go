@@ -14,9 +14,7 @@ import (
 	redigo "github.com/gomodule/redigo/redis"
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
-	"go.uber.org/multierr"
 
-	redisclient "github.com/nimbolus/terraform-backend/pkg/client/redis"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
@@ -31,8 +29,7 @@ type Lock struct {
 	client *redsync.Redsync
 }
 
-func NewLock() *Lock {
-	pool := redisclient.NewPool()
+func NewLock(pool *redigo.Pool) *Lock {
 	rsPool := rsredigo.NewPool(pool)
 
 	return &Lock{
@@ -64,7 +61,7 @@ func (r *Lock) Lock(s *terraform.State) (locked bool, err error) {
 			log.Errorf("failed to unlock redsync mutex: %v", mutErr)
 
 			if err != nil {
-				err = multierr.Append(err, mutErr)
+				err = errors.Join(err, mutErr)
 			}
 		}
 	}()
@@ -114,7 +111,7 @@ func (r *Lock) Unlock(s *terraform.State) (unlocked bool, err error) {
 			log.Errorf("failed to unlock redsync mutex: %v", mutErr)
 
 			if err != nil {
-				err = multierr.Append(err, mutErr)
+				err = errors.Join(err, mutErr)
 			}
 		}
 	}()
@@ -153,7 +150,7 @@ func (r *Lock) GetLock(s *terraform.State) (lock terraform.LockInfo, err error) 
 			log.Errorf("failed to unlock redsync mutex: %v", mutErr)
 
 			if err != nil {
-				err = multierr.Append(err, mutErr)
+				err = errors.Join(err, mutErr)
 			}
 		}
 	}()

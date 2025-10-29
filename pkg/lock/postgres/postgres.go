@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	pgclient "github.com/nimbolus/terraform-backend/pkg/client/postgres"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
@@ -18,12 +17,7 @@ type Lock struct {
 	table string
 }
 
-func NewLock(table string) (*Lock, error) {
-	db, err := pgclient.NewClient()
-	if err != nil {
-		return nil, err
-	}
-
+func NewLock(db *sql.DB, table string) (*Lock, error) {
 	l := &Lock{
 		db:    db,
 		table: table,

@@ -1,25 +1,17 @@
-//go:build integration || postgres
-// +build integration postgres
-
 package postgres
 
 import (
 	"testing"
 
-	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 
+	"github.com/nimbolus/terraform-backend/pkg/client/postgres/postgrestest"
 	"github.com/nimbolus/terraform-backend/pkg/lock/util"
 )
 
-func init() {
-	viper.AutomaticEnv()
-}
-
 func TestLock(t *testing.T) {
-	l, err := NewLock("locks")
-	if err != nil {
-		t.Error(err)
-	}
+	l, err := NewLock(postgrestest.NewIfIntegrationTest(t), "locks")
+	require.NoError(t, err)
 
 	util.LockTest(t, l)
 }

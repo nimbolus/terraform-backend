@@ -1,18 +1,13 @@
 package util
 
 import (
-	"errors"
 	"testing"
 
-	"github.com/spf13/viper"
+	"github.com/stretchr/testify/require"
 
 	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
-
-func init() {
-	viper.AutomaticEnv()
-}
 
 func StorageTest(t *testing.T, s storage.Storage) {
 	state := &terraform.State{
@@ -23,40 +18,23 @@ func StorageTest(t *testing.T, s storage.Storage) {
 	}
 
 	nonExisting, err := s.GetState(state.ID)
-	if nonExisting != nil || !errors.Is(err, storage.ErrStateNotFound) {
-		t.Error("non existing state should return ErrStateNotFound")
-	}
+	require.ErrorIs(t, err, storage.ErrStateNotFound)
+	require.Nil(t, nonExisting)
 
-	if err := s.SaveState(state); err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, s.SaveState(state))
 
 	savedState, err := s.GetState(state.ID)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if string(state.Data) != string(savedState.Data) {
-		t.Errorf("state data does not match")
-	}
+	require.NoError(t, err)
+	require.Equal(t, state.Data, savedState.Data)
 
 	state.Data = []byte("test2")
 
-	if err := s.SaveState(state); err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, s.SaveState(state))
 
 	savedState, err = s.GetState(state.ID)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if string(state.Data) != string(savedState.Data) {
-		t.Errorf("state data does not match")
-	}
+	require.NoError(t, err)
+	require.Equal(t, state.Data, savedState.Data)
 
 	err = s.DeleteState(state.ID)
-	if err != nil {
-		t.Error(err)
-	}
+	require.NoError(t, err)
 }

@@ -15,7 +15,7 @@ func NewBasicAuth() *BasicAuth {
 	return &BasicAuth{}
 }
 
-func (l *BasicAuth) GetName() string {
+func (b *BasicAuth) GetName() string {
 	return Name
 }
 
