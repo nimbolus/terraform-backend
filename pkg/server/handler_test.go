@@ -1,6 +1,3 @@
-//go:build integration || handler
-// +build integration handler
-
 package server
 
 import (
@@ -16,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/gruntwork-io/terratest/modules/terraform"
+	"github.com/stretchr/testify/require"
 
 	localkms "github.com/nimbolus/terraform-backend/pkg/kms/local"
 	"github.com/nimbolus/terraform-backend/pkg/lock"
@@ -27,6 +25,12 @@ import (
 var terraformBinary = flag.String("tf", "terraform", "terraform binary")
 
 func NewStateHandler(t *testing.T, baseDir string, forceUnlockEnabled bool) http.Handler {
+	t.Helper()
+
+	if v := os.Getenv("INTEGRATION_TEST"); v == "" {
+		t.Skip("env var INTEGRATION_TEST not set")
+	}
+
 	store, err := filesystem.NewFileSystemStorage(filepath.Join(baseDir, "storage"))
 	if err != nil {
 		t.Fatal(err)
@@ -50,9 +54,9 @@ func terraformOptions(t *testing.T, baseDir, addr string) *terraform.Options {
 	return terraform.WithDefaultRetryableErrors(t, &terraform.Options{
 		TerraformDir:    baseDir,
 		TerraformBinary: *terraformBinary,
-		Vars:            map[string]interface{}{},
+		Vars:            map[string]any{},
 		Reconfigure:     true,
-		BackendConfig: map[string]interface{}{
+		BackendConfig: map[string]any{
 			"address":        addr,
 			"lock_address":   addr,
 			"unlock_address": addr,
@@ -186,7 +190,7 @@ func simulateLock(t *testing.T, address string, doLock bool) {
 
 	req.SetBasicAuth("basic", "some-random-secret")
 
-	if _, err := http.DefaultClient.Do(req); err != nil {
-		t.Fatal(err)
-	}
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
 }

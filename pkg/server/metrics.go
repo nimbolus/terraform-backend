@@ -5,13 +5,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/nimbolus/terraform-backend/pkg/kms"
-	"github.com/nimbolus/terraform-backend/pkg/lock"
-	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+
+	"github.com/nimbolus/terraform-backend/pkg/kms"
+	"github.com/nimbolus/terraform-backend/pkg/lock"
+	"github.com/nimbolus/terraform-backend/pkg/storage"
 )
 
 const Namespace = "tfbackend"

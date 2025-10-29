@@ -35,24 +35,24 @@ func GenerateKey() (string, error) {
 	return base64.StdEncoding.EncodeToString(bytes), nil
 }
 
-func (v *KMS) GetName() string {
+func (k *KMS) GetName() string {
 	return Name
 }
 
-func (s *KMS) Encrypt(d []byte) ([]byte, error) {
-	nonce := make([]byte, s.cipher.NonceSize())
+func (k *KMS) Encrypt(d []byte) ([]byte, error) {
+	nonce := make([]byte, k.cipher.NonceSize())
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, fmt.Errorf("failed to create nonce for seal with local KMS: %v", err)
 	}
 
-	return s.cipher.Seal(nonce, nonce, d, nil), nil
+	return k.cipher.Seal(nonce, nonce, d, nil), nil
 }
 
-func (s *KMS) Decrypt(d []byte) ([]byte, error) {
-	nonceSize := s.cipher.NonceSize()
+func (k *KMS) Decrypt(d []byte) ([]byte, error) {
+	nonceSize := k.cipher.NonceSize()
 	nonce, ciphertext := d[:nonceSize], d[nonceSize:]
 
-	plaintext, err := s.cipher.Open(nil, nonce, ciphertext, nil)
+	plaintext, err := k.cipher.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal with simple KMS: %v", err)
 	}
