@@ -41,9 +41,10 @@ JWT allow granting access to a state for a given time (the token lifetime). The 
 NOTE: `state` value can be set to `*` to allow accessing all project states
 
 ### Config
-| Environment Variable     | Type | Example                                      | Description                                                                       |
-|--------------------------|------|----------------------------------------------|-----------------------------------------------------------------------------------|
-| AUTH_JWT_OIDC_ISSUER_URL | bool | `https://vault.example.com/v1/identity/oidc` | Issuer URL which is used to validate token (if not defined, JWT auth is disabled) |
+| Environment Variable     | Type   | Example                                      | Description                                                                       |
+|--------------------------|--------|----------------------------------------------|-----------------------------------------------------------------------------------|
+| AUTH_JWT_OIDC_ISSUER_URL | bool   | `https://vault.example.com/v1/identity/oidc` | Issuer URL which is used to validate token (if not defined, JWT auth is disabled) |
+| AUTH_JWT_OIDC_CLIENT_ID  | string | `terraform-backend` (Default)                | Client ID (string or URI) used for validating token audience claim                |
 
 
 **Example Terraform backend configuration**
