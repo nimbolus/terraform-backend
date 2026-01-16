@@ -33,7 +33,7 @@ func (j *JWTAuth) Authenticate(secret string, s *terraform.State) (bool, error) 
 	}
 
 	verifier := provider.Verifier(&oidc.Config{
-		ClientID: b.clientID,
+		ClientID: j.clientID,
 	})
 
 	token, err := verifier.Verify(context.Background(), secret)
