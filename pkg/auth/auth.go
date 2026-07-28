@@ -34,7 +34,7 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 		issuerURL := viper.GetString("auth_jwt_oidc_issuer_url")
 		viper.SetDefault("auth_jwt_oidc_client_id", "terraform-backend")
 		clientID := viper.GetString("auth_jwt_oidc_client_id")
-		if addr := viper.GetString("vault_addr"); issuerURL != "" && addr != "" {
+		if addr := viper.GetString("vault_addr"); issuerURL == "" && addr != "" {
 			issuerURL = fmt.Sprintf("%s/v1/identity/oidc", addr)
 		} else {
 			return false, fmt.Errorf("jwt auth is not enabled")
