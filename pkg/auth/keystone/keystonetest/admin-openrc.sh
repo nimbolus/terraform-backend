@@ -1,0 +1,7 @@
+export OS_AUTH_URL="http://localhost:5000"
+export OS_REGION_NAME="eu-central-1"
+export OS_PROJECT_DOMAIN_NAME="Default"
+export OS_PROJECT_NAME="admin"
+export OS_USER_DOMAIN_NAME="Default"
+export OS_USERNAME="admin"
+export OS_PASSWORD="admin"
