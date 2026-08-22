@@ -26,7 +26,7 @@ func TestAuth(t *testing.T) {
 
 	a := NewJWTAuth("http://localhost:8200/v1/identity/oidc", "terraform-backend")
 
-	t.Run("success", func(t *testing.T) {
+	t.Run("invalid project", func(t *testing.T) {
 		state := &terraform.State{
 			ID:      terraform.GetStateID("other-project", "prod"),
 			Project: "other-project",
@@ -50,7 +50,7 @@ func TestAuth(t *testing.T) {
 		require.False(t, ok)
 	})
 
-	t.Run("invalid project", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		state := &terraform.State{
 			ID:      terraform.GetStateID("sample", "prod"),
 			Project: "sample",
