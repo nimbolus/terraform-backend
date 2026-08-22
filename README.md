@@ -80,8 +80,14 @@ Run unit tests:
 go test ./...
 ```
 
-Run integration tests:
+For running integration tests a few dependencies need to be started first:
+
 ```sh
-docker-compose up -d redis postgres minio openbao openbao-init
+docker-compose up -d redis postgres minio openbao openbao-init keystone
+```
+
+Wait for initialization (especially keystone needs some time) and then run integration tests:
+
+```sh
 INTEGRATION_TEST=true go test ./... -count=1
 ```
