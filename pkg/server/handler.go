@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 
 	"github.com/nimbolus/terraform-backend/pkg/auth"
 	"github.com/nimbolus/terraform-backend/pkg/kms"
@@ -37,13 +38,11 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(http.ResponseWriter, *http.Request) {
+	viper.SetDefault("max_body_size", 100<<20)
+	maxBodySize := viper.GetInt64("max_body_size")
+
 	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
 		defer r.Body.Close()
-		if err != nil {
-			HTTPResponse(w, r, http.StatusInternalServerError, err.Error())
-			return
-		}
 
 		vars := mux.Vars(r)
 		state := &terraform.State{
@@ -53,7 +52,6 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 		}
 
 		log.Infof("%s %s", r.Method, r.URL.Path)
-		log.Tracef("request: %s %s: %s", r.Method, r.URL.Path, body)
 
 		if ok, err := auth.Authenticate(r, state); err != nil {
 			log.Warnf("failed process authentication for state id %s: %v", state.ID, err)
@@ -66,6 +64,23 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 
 			return
 		}
+
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxBodySize))
+		if err != nil {
+			var maxBytesErr *http.MaxBytesError
+			if errors.As(err, &maxBytesErr) {
+				log.Warnf("request body for state id %s exceeds limit of %d bytes", state.ID, maxBodySize)
+				HTTPResponse(w, r, http.StatusRequestEntityTooLarge, "Request body too large")
+
+				return
+			}
+
+			HTTPResponse(w, r, http.StatusInternalServerError, err.Error())
+
+			return
+		}
+
+		log.Tracef("request: %s %s: %s", r.Method, r.URL.Path, body)
 
 		switch r.Method {
 		case "LOCK":
