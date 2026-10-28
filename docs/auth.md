@@ -49,6 +49,7 @@ NOTE: `state` value can be set to `*` to allow accessing all project states
 |--------------------------|--------|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
 | AUTH_JWT_OIDC_ISSUER_URL | string | `https://vault.example.com/v1/identity/oidc` | Issuer URL which is used to validate token (if not defined, `$VAULT_ADDR/v1/identity/oidc` is used; if neither is defined, JWT auth is disabled) |
 | AUTH_JWT_OIDC_CLIENT_ID  | string | `terraform-backend` (Default)                | Client ID (string or URI) used for validating token audience claim                                                                               |
+| AUTH_JWT_PROJECT_CLAIM   | string | `repository_id`                              | Name of a token claim whose string value is used as project instead of the `terraform-backend` claim (see below)                                 |
 
 #### Example Terraform backend configuration
 
@@ -63,6 +64,12 @@ terraform {
   }
 }
 ```
+
+### Using another claim as project
+
+`AUTH_JWT_PROJECT_CLAIM` allows identity providers which cannot emit the `terraform-backend` claim, such as the OIDC ID tokens of GitHub or Forgejo Actions, to be used. If defined, the `terraform-backend` claim is ignored (tokens with only that claim are rejected) and all states of the project given by the claim can be accessed. Tokens without the claim, or with a non-string or empty value, are rejected.
+
+The claim must be a unique and stable identifier controlled by the identity provider and not by the token requester (e.g. `repository_id`, not `sub` or a user-chosen value). As `project` is a single URL path segment, claims containing `/` (e.g. `owner/repo`) can never match.
 
 ### Example using HashiCorp Vault Identity Tokens
 
