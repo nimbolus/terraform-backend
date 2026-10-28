@@ -37,7 +37,7 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 		}
 		viper.SetDefault("auth_jwt_oidc_client_id", "terraform-backend")
 		clientID := viper.GetString("auth_jwt_oidc_client_id")
-		authenticator = jwt.NewJWTAuth(issuerURL, clientID)
+		authenticator = jwt.NewJWTAuth(issuerURL, clientID, viper.GetString("auth_jwt_project_claim"))
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}
