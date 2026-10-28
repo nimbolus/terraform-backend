@@ -1,4 +1,4 @@
-## Storage backends
+# Storage Backends
 
 The storage backend stores the state locally or remotely (depending on the implementation).
 
@@ -9,6 +9,7 @@ NOTE: The state path is always hashed, so getting the state name of project from
 This backend saves the state file to a local directory.
 
 ### Config
+
 Set `STORAGE_BACKEND` to `fs`.
 
 | Environment Variable | Type   | Default    | Description                          |
@@ -20,6 +21,7 @@ Set `STORAGE_BACKEND` to `fs`.
 The S3 backend stores the state files in any S3-compatible object store using the [MinIO SDK](https://docs.min.io/docs/golang-client-quickstart-guide.html). Since locking is handled by the Terraform backend server separately, the S3 API doesn't need support for write-once-read-many (WORM).
 
 ### Config
+
 Set `STORAGE_BACKEND` to `s3`.
 
 | Environment Variable       | Type   | Default            | Description                                                               |
@@ -31,12 +33,12 @@ Set `STORAGE_BACKEND` to `s3`.
 | STORAGE_S3_SECRET_KEY_FILE | string | --                 | file containing the value for STORAGE_S3_SECRET_KEY, will take precedence |
 | STORAGE_S3_BUCKET          | string | `terraform-state`  | Name of the S3 bucket                                                     |
 
-
 ## Postgres
 
 The Postgres backend stores state files in a database table.
 
 ### Config
+
 Set `STORAGE_BACKEND` to `postgres`.
 
 | Environment Variable   | Type   | Default  | Description                            |

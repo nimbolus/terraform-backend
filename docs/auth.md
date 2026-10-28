@@ -7,11 +7,13 @@ The authentication method is defined by the HTTP basic auth username, therefore 
 This authentication creates a hash value of provided HTTP basic auth password and state path to get the filename of the state. Therefore only the right combination of state path and password can fetch this exact state again. It's really simple to setup, no user or credential management required. The drawback is that the server can be used by everyone, who has access to the API endpoint, so it should only be used in secure or testing environments.
 
 ### Config
-| Environment Variable | Type | Example | Description                                                                                     |
-|----------------------|------|---------|-------------------------------------------------------------------------------------------------|
-| AUTH_BASIC_ENABLED   | bool | `true`  | HTTP basic auth is enabled by default (checkout [docs/auth.md](docs/auth.md) for other options) |
 
-**Example Terraform backend configuration**
+| Environment Variable | Type | Example | Description                                                                                |
+|----------------------|------|---------|--------------------------------------------------------------------------------------------|
+| AUTH_BASIC_ENABLED   | bool | `true`  | HTTP basic auth is enabled by default (checkout [JWT](#json-web-tokens) for other options) |
+
+#### Example Terraform backend configuration
+
 ```hcl
 terraform {
   backend "http" {
@@ -29,6 +31,7 @@ terraform {
 JWT allow granting access to a state for a given time (the token lifetime). The project and ID of the state must be part of the `terraform-backend` token claim.
 
 `terraform-backend` token claim format:
+
 ```json
 {
     "terraform-backend": {
@@ -41,13 +44,14 @@ JWT allow granting access to a state for a given time (the token lifetime). The 
 NOTE: `state` value can be set to `*` to allow accessing all project states
 
 ### Config
-| Environment Variable     | Type   | Example                                      | Description                                                                       |
-|--------------------------|--------|----------------------------------------------|-----------------------------------------------------------------------------------|
-| AUTH_JWT_OIDC_ISSUER_URL | bool   | `https://vault.example.com/v1/identity/oidc` | Issuer URL which is used to validate token (if not defined, JWT auth is disabled) |
-| AUTH_JWT_OIDC_CLIENT_ID  | string | `terraform-backend` (Default)                | Client ID (string or URI) used for validating token audience claim                |
 
+| Environment Variable     | Type   | Example                                      | Description                                                                                                                                      |
+|--------------------------|--------|----------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| AUTH_JWT_OIDC_ISSUER_URL | string | `https://vault.example.com/v1/identity/oidc` | Issuer URL which is used to validate token (if not defined, `$VAULT_ADDR/v1/identity/oidc` is used; if neither is defined, JWT auth is disabled) |
+| AUTH_JWT_OIDC_CLIENT_ID  | string | `terraform-backend` (Default)                | Client ID (string or URI) used for validating token audience claim                                                                               |
 
-**Example Terraform backend configuration**
+#### Example Terraform backend configuration
+
 ```hcl
 terraform {
   backend "http" {
@@ -65,6 +69,7 @@ terraform {
 HashiCorp Vault allows creating [Identity Tokens](https://www.vaultproject.io/docs/secrets/identity/identity-token) for third party systems, so that Vault policies can be used to give access to specific Terraform states.
 
 Terraform code for creating a OIDC role for accessing the state at `https://<terraform-state-server>/state/project1/exmaple`:
+
 ```hcl
 resource "vault_identity_oidc_key" "example" {
   name      = "example"
@@ -93,7 +98,8 @@ resource "vault_identity_oidc_key_allowed_client_id" "example" {
 }
 ```
 
-Terraform backend configuration
+### Terraform backend configuration
+
 ```hcl
 terraform {
   backend "http" {
@@ -106,6 +112,7 @@ terraform {
 ```
 
 Terraform backend initialization (requires initialized HashiCorp Vault CLI client session):
+
 ```sh
 TOKEN=$(vault read -field token identity/oidc/token/example)
 terraform init -backend-config="password=$TOKEN" -reconfigure

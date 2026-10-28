@@ -5,20 +5,24 @@ A state backend server which implements the Terraform HTTP backend API with plug
 > :warning: **Disclaimer**: This code is in an early development state and not tested extensively for bugs and security issues. If you find some, please raise an issue or merge request.
 
 Supported authentication methods:
+
 - HTTP basic auth
 - JSON Web Tokens
 
 Supported storage backends:
+
 - local file system
 - S3
 - Postgres
 
 Supported lock backends:
+
 - local map
 - Redis
 - Postgres
 
 Supported KMS (encryption) backends:
+
 - local AES key
 - AES from HashiCorp Vault Key/Value store (v2)
 - HashiCorp Vault Transit engine
@@ -26,11 +30,13 @@ Supported KMS (encryption) backends:
 ## Deployment
 
 Run locally for development:
+
 ```sh
 LOG_LEVEL=debug go run cmd/terraform-backend.go
 ```
 
 or use [docker-compose](./docker-compose.yml):
+
 ```sh
 docker-compose up -d
 ```
@@ -58,7 +64,8 @@ The following table describes the default configuration, although the backend se
 
 The path to the state is: `/state/<project-id>/<state-name>`.
 
-**Example Terraform backend configuration**
+### Example Terraform backend configuration
+
 ```hcl
 terraform {
   backend "http" {
@@ -76,11 +83,13 @@ For more information about username and password checkout [docs/auth.md](./docs/
 ## Tests
 
 Run unit tests:
+
 ```sh
 go test ./...
 ```
 
 Run integration tests:
+
 ```sh
 docker-compose up -d redis postgres minio openbao openbao-init
 INTEGRATION_TEST=true go test ./... -count=1

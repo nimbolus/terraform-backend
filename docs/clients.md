@@ -4,7 +4,8 @@
 
 Requests against a Vault server are handled by this client. Since most requests need authentication, a Vault token can be defined in the environment or fetched by the client for example with a Kubernetes service account.
 
-**Config**
+### Config
+
 | Environment Variable | Type   | Default      | Description                                                                                                                    |
 |----------------------|--------|--------------|--------------------------------------------------------------------------------------------------------------------------------|
 | VAULT_ADDR           | string | --           | see [Vault Environment Variables](https://www.vaultproject.io/docs/commands#environment-variables)                             |
@@ -17,7 +18,8 @@ Requests against a Vault server are handled by this client. Since most requests 
 
 This client handles Redis requests.
 
-**Config**
+### Config
+
 | Environment Variable | Type   | Default          | Description                                                        |
 |----------------------|--------|------------------|--------------------------------------------------------------------|
 | REDIS_ADDR           | string | `localhost:6379` | Host and port of the Redis instance                                |
@@ -28,7 +30,8 @@ This client handles Redis requests.
 
 This client handles Postgres requests.
 
-**Config**
+### Config
+
 | Environment Variable     | Type   | Default                                                                | Description                                                             |
 |--------------------------|--------|------------------------------------------------------------------------|-------------------------------------------------------------------------|
 | POSTGRES_CONNECTION      | string | `postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable` | Host and port of the Postgres instance                                  |
