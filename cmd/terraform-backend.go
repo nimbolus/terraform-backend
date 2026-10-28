@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -57,7 +58,7 @@ func main() {
 
 		go func() {
 			log.Printf("listening on %s for metrics", metricsAddr)
-			err = http.ListenAndServe(metricsAddr, metricsRouter)
+			err = newHTTPServer(metricsAddr, metricsRouter).ListenAndServe()
 			if err != nil {
 				log.Fatalf("failed to listen on %s for metrics: %v", metricsAddr, err)
 			}
@@ -69,12 +70,27 @@ func main() {
 
 	server.RecordMetrics(store, locker, kms)
 
+	srv := newHTTPServer(addr, r)
+
 	if tlsKey != "" && tlsCert != "" {
 		log.Printf("listening on %s with tls", addr)
-		err = http.ListenAndServeTLS(addr, tlsCert, tlsKey, r)
+		err = srv.ListenAndServeTLS(tlsCert, tlsKey)
 	} else {
 		log.Printf("listening on %s", addr)
-		err = http.ListenAndServe(addr, r)
+		err = srv.ListenAndServe()
 	}
 	log.Fatalf("failed to listen on %s: %v", addr, err)
+}
+
+// newHTTPServer returns a server with timeouts, so that slow or idle clients can't hold connections open indefinitely.
+// The read and write timeouts are generous to allow transferring large state files.
+func newHTTPServer(addr string, handler http.Handler) *http.Server {
+	return &http.Server{
+		Addr:              addr,
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       5 * time.Minute,
+		WriteTimeout:      5 * time.Minute,
+		IdleTimeout:       2 * time.Minute,
+	}
 }
