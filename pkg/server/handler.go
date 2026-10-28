@@ -27,9 +27,21 @@ func HTTPResponse(w http.ResponseWriter, r *http.Request, code int, body string)
 
 	requestCount.With(prometheus.Labels{
 		"method": r.Method,
-		"path":   r.URL.Path,
+		"path":   routeTemplate(r),
 		"code":   strconv.Itoa(code),
 	}).Inc()
+}
+
+// routeTemplate returns the path template of the matched route (e.g. /state/{project}/{name}),
+// so that the metric labels don't grow with every requested state path.
+func routeTemplate(r *http.Request) string {
+	if route := mux.CurrentRoute(r); route != nil {
+		if tpl, err := route.GetPathTemplate(); err == nil {
+			return tpl
+		}
+	}
+
+	return "unknown"
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
