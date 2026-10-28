@@ -31,14 +31,12 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 		}
 		authenticator = basic.NewBasicAuth()
 	case jwt.Name:
-		issuerURL := viper.GetString("auth_jwt_oidc_issuer_url")
-		viper.SetDefault("auth_jwt_oidc_client_id", "terraform-backend")
-		clientID := viper.GetString("auth_jwt_oidc_client_id")
-		if addr := viper.GetString("vault_addr"); issuerURL == "" && addr != "" {
-			issuerURL = fmt.Sprintf("%s/v1/identity/oidc", addr)
-		} else {
+		issuerURL := jwtIssuerURL()
+		if issuerURL == "" {
 			return false, fmt.Errorf("jwt auth is not enabled")
 		}
+		viper.SetDefault("auth_jwt_oidc_client_id", "terraform-backend")
+		clientID := viper.GetString("auth_jwt_oidc_client_id")
 		authenticator = jwt.NewJWTAuth(issuerURL, clientID)
 	default:
 		err = fmt.Errorf("backend is not implemented")
@@ -48,4 +46,16 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 	}
 
 	return authenticator.Authenticate(secret, s)
+}
+
+// jwtIssuerURL returns the configured OIDC issuer URL, falling back to the
+// Vault identity issuer if only VAULT_ADDR is set. It is empty if JWT auth is disabled.
+func jwtIssuerURL() string {
+	if issuerURL := viper.GetString("auth_jwt_oidc_issuer_url"); issuerURL != "" {
+		return issuerURL
+	}
+	if addr := viper.GetString("vault_addr"); addr != "" {
+		return fmt.Sprintf("%s/v1/identity/oidc", addr)
+	}
+	return ""
 }
