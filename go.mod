@@ -7,6 +7,7 @@ require (
 	github.com/go-redsync/redsync/v4 v4.14.0
 	github.com/gomodule/redigo v1.9.3
 	github.com/google/uuid v1.6.0
+	github.com/gophercloud/gophercloud/v2 v2.13.0
 	github.com/gorilla/mux v1.8.1
 	github.com/gruntwork-io/terratest v0.41.16
 	github.com/hashicorp/vault/api v1.22.0

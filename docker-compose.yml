@@ -52,6 +52,25 @@ services:
       BAO_ADDR: http://openbao:8200
     restart: on-failure
     stop_grace_period: 100ms
+  keystone:
+    image: quay.io/openstack.kolla/keystone:2025.1-rocky-9
+    volumes:
+      - ./pkg/auth/keystone/keystonetest:/var/lib/kolla/config_files:ro
+      - keystone-fernet:/etc/keystone/fernet-keys
+    ports:
+      - "5000:5000"
+    environment:
+      KOLLA_CONFIG_STRATEGY: COPY_ALWAYS
+    depends_on:
+      - keystone-mysql
+  keystone-mysql:
+    image: docker.io/mariadb:11
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      MARIADB_USER: keystone
+      MARIADB_PASSWORD: keystone
+      MARIADB_DATABASE: keystone
 
 volumes:
   states:
+  keystone-fernet:
