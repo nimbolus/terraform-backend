@@ -14,19 +14,30 @@ services:
     volumes:
       - states:/states
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   postgres:
     image: postgres:alpine
     environment:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "127.0.0.1", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   minio:
-    image: minio/minio:RELEASE.2022-04-30T22-23-53Z # a version that still supports fs storage
+    image: quay.io/nimbolus/minio:RELEASE.2022-04-30T22-23-53Z # a version that still supports fs storage
     environment:
       MINIO_ROOT_USER: root
       MINIO_ROOT_PASSWORD: password
@@ -35,21 +46,38 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   openbao:
     image: ghcr.io/openbao/openbao
     command: server -dev -dev-root-token-id="dev-only-token"
     ports:
       - "8200:8200"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:8200/v1/sys/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   openbao-init:
     image: ghcr.io/openbao/openbao
     volumes:
       - ./scripts/dev-openbao-init.sh:/dev-openbao-init.sh
     depends_on:
-      - openbao
+      openbao:
+        condition: service_healthy
     entrypoint: /bin/sh
     command: /dev-openbao-init.sh dev-only-token
     environment:
       BAO_ADDR: http://openbao:8200
+      BAO_TOKEN: dev-only-token
+    healthcheck:
+      test: ["CMD", "bao", "read", "identity/oidc/role/terraform-backend-sample"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: on-failure
     stop_grace_period: 100ms
 

@@ -92,6 +92,6 @@ go test ./...
 Run integration tests:
 
 ```sh
-docker-compose up -d redis postgres minio openbao openbao-init
+docker-compose up -d --wait redis postgres minio openbao openbao-init
 INTEGRATION_TEST=true go test ./... -count=1
 ```
