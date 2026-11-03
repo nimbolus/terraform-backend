@@ -7,6 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
+	"github.com/nimbolus/terraform-backend/pkg/auth"
 	"github.com/nimbolus/terraform-backend/pkg/server"
 )
 
@@ -38,6 +39,10 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	log.Infof("initialized %s KMS backend", kms.GetName())
+
+	if err := auth.CheckConfig(); err != nil {
+		log.Fatalf("invalid auth config: %v", err)
+	}
 
 	viper.SetDefault("listen_addr", ":8080")
 	addr := viper.GetString("listen_addr")

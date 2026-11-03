@@ -3,6 +3,7 @@ package auth
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/spf13/viper"
 
@@ -35,9 +36,7 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 		if issuerURL == "" {
 			return false, fmt.Errorf("jwt auth is not enabled")
 		}
-		viper.SetDefault("auth_jwt_oidc_client_id", "terraform-backend")
-		clientID := viper.GetString("auth_jwt_oidc_client_id")
-		authenticator = jwt.NewJWTAuth(issuerURL, clientID)
+		authenticator, err = jwtAuthenticator(issuerURL)
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}
@@ -46,6 +45,52 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 	}
 
 	return authenticator.Authenticate(secret, s)
+}
+
+// CheckConfig validates the auth config, e.g. the expressions of the JWT auth,
+// so that a misconfiguration fails at startup instead of on each request.
+func CheckConfig() error {
+	issuerURL := jwtIssuerURL()
+	if issuerURL == "" {
+		return nil
+	}
+
+	_, err := jwtAuthenticator(issuerURL)
+
+	return err
+}
+
+var (
+	jwtAuthMu     sync.Mutex
+	jwtAuthConfig jwt.Config
+	jwtAuth       *jwt.JWTAuth
+)
+
+// jwtAuthenticator returns the JWT authenticator for the current config. It is
+// only recreated if the config changed, as compiling its expressions is expensive.
+func jwtAuthenticator(issuerURL string) (*jwt.JWTAuth, error) {
+	viper.SetDefault("auth_jwt_oidc_client_id", "terraform-backend")
+	cfg := jwt.Config{
+		IssuerURL:            issuerURL,
+		ClientID:             viper.GetString("auth_jwt_oidc_client_id"),
+		ProjectExpression:    viper.GetString("auth_jwt_project_expression"),
+		StateExpression:      viper.GetString("auth_jwt_state_expression"),
+		ValidationExpression: viper.GetString("auth_jwt_validation_expression"),
+	}
+
+	jwtAuthMu.Lock()
+	defer jwtAuthMu.Unlock()
+
+	if jwtAuth != nil && cfg == jwtAuthConfig {
+		return jwtAuth, nil
+	}
+
+	a, err := jwt.NewJWTAuth(cfg)
+	if err != nil {
+		return nil, err
+	}
+	jwtAuth, jwtAuthConfig = a, cfg
+	return a, nil
 }
 
 // jwtIssuerURL returns the configured OIDC issuer URL, falling back to the
