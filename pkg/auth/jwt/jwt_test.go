@@ -24,7 +24,8 @@ func TestAuth(t *testing.T) {
 	token, err := v.Logical().Read("identity/oidc/token/terraform-backend-sample")
 	require.NoError(t, err)
 
-	a := NewJWTAuth("http://localhost:8200/v1/identity/oidc", "terraform-backend")
+	a, err := NewJWTAuth(Config{IssuerURL: "http://localhost:8200/v1/identity/oidc", ClientID: "terraform-backend"})
+	require.NoError(t, err)
 
 	t.Run("invalid project", func(t *testing.T) {
 		state := &terraform.State{
