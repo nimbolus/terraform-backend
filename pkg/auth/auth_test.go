@@ -50,3 +50,28 @@ func TestAuthenticateJWTDisabled(t *testing.T) {
 	require.False(t, ok)
 	require.EqualError(t, err, "jwt auth is not enabled")
 }
+
+func TestCheckConfig(t *testing.T) {
+	t.Cleanup(func() { viper.Set("auth_jwt_validation_expression", "") })
+
+	setJWTConfig(t, "", "")
+	viper.Set("auth_jwt_validation_expression", "invalid ==")
+	require.NoError(t, CheckConfig(), "jwt auth is disabled")
+
+	setJWTConfig(t, "https://token.actions.githubusercontent.com", "")
+	require.ErrorContains(t, CheckConfig(), "invalid validation expression")
+
+	viper.Set("auth_jwt_validation_expression", `claims.repository_owner_id == "123"`)
+	require.NoError(t, CheckConfig())
+
+	first, err := jwtAuthenticator(jwtIssuerURL())
+	require.NoError(t, err)
+	second, err := jwtAuthenticator(jwtIssuerURL())
+	require.NoError(t, err)
+	require.Same(t, first, second, "authenticator is reused while the config is unchanged")
+
+	viper.Set("auth_jwt_validation_expression", `claims.repository_owner_id == "456"`)
+	third, err := jwtAuthenticator(jwtIssuerURL())
+	require.NoError(t, err)
+	require.NotSame(t, first, third, "authenticator is recreated after a config change")
+}
