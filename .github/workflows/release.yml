@@ -2,7 +2,7 @@ name: Release Container Image
 
 on:
   push:
-    tags: ["*"]
+    tags: ["v*"]
   workflow_dispatch:
 
 env:
@@ -10,7 +10,40 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+
+  draft-release:
+    needs: test
+    # a manual run only publishes the image of the selected ref
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          # the notes cover the commits since the previous tag
+          fetch-depth: 0
+
+      - name: Release notes
+        id: notes
+        uses: ./.github/actions/release-notes
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          body_path: ${{ steps.notes.outputs.path }}
+
   publish-image:
+    needs: [test, draft-release]
+    # draft-release is skipped for manual runs, which must still publish the image
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -40,7 +73,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{version}}
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
             type=sha
 
       - name: Build and push Docker image
@@ -51,3 +84,16 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  publish-release:
+    needs: publish-image
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ contains(github.ref_name, '-') }}
+        run: gh release edit "$GITHUB_REF_NAME" --draft=false --prerelease="$PRERELEASE" --repo "$GITHUB_REPOSITORY"

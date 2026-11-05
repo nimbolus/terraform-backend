@@ -1,0 +1,18 @@
+name: install convco
+description: Install the convco cli for conventional commits
+
+runs:
+  using: composite
+  steps:
+    - name: Install convco
+      shell: bash
+      env:
+        CONVCO_VERSION: v0.7.2
+        CONVCO_SHA256: a34797bb6867d3444cce9466c96d49abea4cecd02cac12dce218b637570fd0d4
+      run: |
+        name="convco-${CONVCO_VERSION}-x86_64-unknown-linux-musl"
+        cd "$RUNNER_TEMP"
+        curl -sSfL -o convco.tar.gz "https://github.com/convco/convco/releases/download/${CONVCO_VERSION}/${name}.tar.gz"
+        echo "${CONVCO_SHA256}  convco.tar.gz" | sha256sum -c -
+        tar xzf convco.tar.gz
+        echo "$RUNNER_TEMP/${name}" >> "$GITHUB_PATH"

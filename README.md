@@ -95,3 +95,25 @@ Run integration tests:
 docker-compose up -d --wait redis postgres minio openbao openbao-init
 INTEGRATION_TEST=true go test ./... -count=1
 ```
+
+## Releasing
+
+Pushing a `v*` tag runs the release workflow: it runs the tests, checks that [CHANGELOG.md](./CHANGELOG.md) is up to date, creates a draft release with the changelog section of the version as notes, publishes the container image and then the release.
+
+The changelog check regenerates `CHANGELOG.md` from the tag and compares it with the committed one. The version heading takes its date and compare link from the annotated tag. `--tag-unreleased` renders the unreleased commits as if `HEAD` was already tagged, so the changelog is generated before the tag and the tag goes on the release commit:
+
+```sh
+v=0.3.0
+convco changelog --ignore-prereleases --unreleased "$v" --tag-unreleased --output CHANGELOG.md
+git add CHANGELOG.md && git commit -m "chore: release v$v"
+git tag -a "v$v" -m "v$v"
+git push origin main "v$v"
+```
+
+- `--tag-unreleased` was added in [convco#457](https://github.com/convco/convco/pull/457), but isn't in a convco release yet, so it needs a build from source. CI does not need it, it generates the changelog from the pushed tag.
+- `--unreleased` takes the version without the `v` prefix.
+- The tag has to be annotated and created the same day, a lightweight tag gets the commit date.
+- `chore:` commits are not listed in the changelog, so the release commit does not change it.
+- Commits with a breaking change need a `BREAKING CHANGE:` footer. `!` alone bumps the version, but doesn't add a note to the changelog.
+
+Release candidates (tags with a `-`, like `v0.3.0-rc.1`) are published as prereleases and don't update the `latest` image. They are not added to `CHANGELOG.md` and need no release commit, the tag is pushed directly. The changelog check is skipped for them, their release notes cover the commits since the previous tag.
