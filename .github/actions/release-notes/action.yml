@@ -1,0 +1,39 @@
+name: release notes
+description: Check CHANGELOG.md is up to date for the pushed tag and generate the release notes from it
+
+outputs:
+  path:
+    description: Path of the generated release notes
+    value: ${{ steps.notes.outputs.path }}
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/install-convco
+    # checkout fetches the pushed tag as a lightweight tag, but the version
+    # date in the changelog comes from the annotated tag
+    - name: Fetch annotated tag
+      shell: bash
+      run: git fetch --force origin "refs/tags/$GITHUB_REF_NAME:refs/tags/$GITHUB_REF_NAME"
+    # release candidates are not in CHANGELOG.md, the next release covers all
+    # changes since the previous release. --ignore-prereleases also ignores the
+    # pushed tag, so it is only used for releases.
+    - name: Check changelog is up to date
+      if: ${{ !contains(github.ref_name, '-') }}
+      shell: bash
+      run: |
+        convco changelog --ignore-prereleases --output "$RUNNER_TEMP/CHANGELOG.md"
+        diff -u "$RUNNER_TEMP/CHANGELOG.md" CHANGELOG.md
+    - name: Generate release notes
+      id: notes
+      shell: bash
+      env:
+        PRERELEASE: ${{ contains(github.ref_name, '-') }}
+      # without the changelog header
+      run: |
+        if [ "$PRERELEASE" = true ]; then
+          convco changelog --max-versions 1
+        else
+          convco changelog --ignore-prereleases --max-versions 1
+        fi | sed 1d > "$RUNNER_TEMP/release-notes.md"
+        echo "path=$RUNNER_TEMP/release-notes.md" >> "$GITHUB_OUTPUT"
