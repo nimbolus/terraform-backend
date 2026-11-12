@@ -58,6 +58,7 @@ The following table describes the default configuration, although the backend se
 | KMS_KEY              | string | --          | Key for `local` KMS module. If neither this nor KMS_KEY_FILE is defined, the server will generate a new one and exit |
 | KMS_KEY_FILE         | string | --          | file containing the value for KMS_KEY, will take precedence.                                                         |
 | LOCK_BACKEND         | string | `local`     | Module used for locking the state (checkout [docs/lock.md](./docs/lock.md) for other options)                        |
+| LOCK_FILE_DIR        | string | `./locks`   | File system directory for `file` lock module to store lock files                                                     |
 | AUTH_BASIC_ENABLED   | bool   | `true`      | HTTP basic auth is enabled by default (checkout [docs/auth.md](./docs/auth.md) for other options)                    |
 | FORCE_UNLOCK_ENABLED | bool   | `true`      | Force-unlock feature enables the native Terraform behavior which unlocks the state even if no lock id was sent       |
 

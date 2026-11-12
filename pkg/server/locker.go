@@ -8,6 +8,7 @@ import (
 	pgclient "github.com/nimbolus/terraform-backend/pkg/client/postgres"
 	redisclient "github.com/nimbolus/terraform-backend/pkg/client/redis"
 	"github.com/nimbolus/terraform-backend/pkg/lock"
+	"github.com/nimbolus/terraform-backend/pkg/lock/file"
 	"github.com/nimbolus/terraform-backend/pkg/lock/local"
 	"github.com/nimbolus/terraform-backend/pkg/lock/postgres"
 	"github.com/nimbolus/terraform-backend/pkg/lock/redis"
@@ -22,6 +23,14 @@ func GetLocker() (lock.Locker, error) {
 	switch backend {
 	case local.Name:
 		locker = local.NewLock()
+	case file.Name:
+		viper.SetDefault("lock_file_dir", "./locks")
+		l, err := file.NewLock(viper.GetString("lock_file_dir"))
+		if err != nil {
+			return nil, fmt.Errorf("failed to initialize lock backend %s: %v", backend, err)
+		}
+
+		locker = l
 	case redis.Name:
 		locker = redis.NewLock(redisclient.NewPool())
 	case postgres.Name:
