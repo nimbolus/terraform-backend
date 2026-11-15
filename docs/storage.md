@@ -2,7 +2,29 @@
 
 The storage backend stores the state locally or remotely (depending on the implementation).
 
-NOTE: The state path is always hashed, so getting the state name of project from the file or object name isn't possible.
+## Stored format
+
+The file or object name is `v1-<hash>.tfstate`, where the hash is derived from the project and state name, and with basic
+auth also from the password.
+
+The file or object is JSON with unencrypted metadata and the encrypted state in `data`:
+
+```json
+{
+  "metadata": {
+    "format": "v1",
+    "terraform_backend_version": "v0.3.0",
+    "project": "<project>",
+    "state": "<state>",
+    "last_updated": "<timestamp>"
+  },
+  "data": "<encrypted state, base64>"
+}
+```
+
+NOTE: Anyone with read access to the storage can see the project and state names, but not the content of the states.
+
+Upgrading from a version before v0.3.0 migrates the stored states, see [docs/migration.md](migration.md).
 
 ## Local File System
 

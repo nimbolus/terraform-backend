@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -9,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/nimbolus/terraform-backend/pkg/server"
+	"github.com/nimbolus/terraform-backend/pkg/version"
 )
 
 func main() {
@@ -21,6 +23,11 @@ func main() {
 	}
 	log.Infof("set log level to %s", level.String())
 	log.SetLevel(level)
+	log.Infof("terraform-backend %s", version.Get())
+
+	if len(os.Args) > 1 {
+		os.Exit(runCommand(os.Args[1:]))
+	}
 
 	store, err := server.GetStorage()
 	if err != nil {
@@ -93,4 +100,37 @@ func newHTTPServer(addr string, handler http.Handler) *http.Server {
 		WriteTimeout:      5 * time.Minute,
 		IdleTimeout:       2 * time.Minute,
 	}
+}
+
+// runCommand runs a command instead of the server and returns its exit code. Errors exit with 2.
+func runCommand(args []string) int {
+	switch args[0] {
+	case "check-migration":
+		return checkMigration()
+	default:
+		log.Errorf("unknown command %q, the only command is check-migration", args[0])
+		return 2
+	}
+}
+
+// checkMigration lists the states that are still stored with a legacy ID. It exits with 1 if there are any.
+// TODO: remove in 1.0.0, together with the migration of legacy states.
+func checkMigration() int {
+	store, err := server.GetStorage()
+	if err != nil {
+		log.Error(err.Error())
+		return 2
+	}
+
+	legacy, err := server.CheckMigration(store, os.Stdout)
+	if err != nil {
+		log.Error(err.Error())
+		return 2
+	}
+
+	if legacy > 0 {
+		return 1
+	}
+
+	return 0
 }

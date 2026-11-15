@@ -80,7 +80,8 @@ func TestStateMigration(t *testing.T) {
 	defer resp.Body.Close()
 
 	// verify state file is deleted
-	if _, err := os.Stat(filepath.Join(baseDir, "storage/d82238e1158b32f0b445c5da058608a8c1d83551f890b19b7e90d78cce1a808d.tfstate")); !os.IsNotExist(err) {
+	id, _ := ids(t, "project1", "example")
+	if _, err := os.Stat(filepath.Join(baseDir, "storage", id+".tfstate")); !os.IsNotExist(err) {
 		t.Fatal("state file should be deleted")
 	}
 
