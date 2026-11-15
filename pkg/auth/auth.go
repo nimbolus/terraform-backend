@@ -8,6 +8,7 @@ import (
 
 	"github.com/nimbolus/terraform-backend/pkg/auth/basic"
 	"github.com/nimbolus/terraform-backend/pkg/auth/jwt"
+	"github.com/nimbolus/terraform-backend/pkg/auth/keystone"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
 )
 
@@ -38,6 +39,14 @@ func Authenticate(req *http.Request, s *terraform.State) (ok bool, err error) {
 		viper.SetDefault("auth_jwt_oidc_client_id", "terraform-backend")
 		clientID := viper.GetString("auth_jwt_oidc_client_id")
 		authenticator = jwt.NewJWTAuth(issuerURL, clientID)
+	case keystone.Name:
+		identityEndpoint := viper.GetString("auth_keystone_identity_endpoint")
+		viper.SetDefault("auth_keystone_role", "member")
+		role := viper.GetString("auth_keystone_role")
+		if identityEndpoint == "" {
+			return false, fmt.Errorf("keystone auth is not enabled")
+		}
+		authenticator = keystone.NewKeystoneAuth(identityEndpoint, role)
 	default:
 		err = fmt.Errorf("backend is not implemented")
 	}

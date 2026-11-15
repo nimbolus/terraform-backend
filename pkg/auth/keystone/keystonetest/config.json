@@ -1,0 +1,38 @@
+{
+  "command": "/usr/bin/keystone-startup.sh",
+  "config_files": [
+    {
+      "source": "/var/lib/kolla/config_files/keystone-startup.sh",
+      "dest": "/usr/bin/keystone-startup.sh",
+      "owner": "root",
+      "perm": "0755"
+    },
+    {
+      "source": "/var/lib/kolla/config_files/keystone.conf",
+      "dest": "/etc/keystone/keystone.conf",
+      "owner": "keystone",
+      "perm": "0600"
+    },
+    {
+      "source": "/var/lib/kolla/config_files/wsgi-keystone.conf",
+      "dest": "/etc/httpd/conf.d/wsgi-keystone.conf",
+      "owner": "keystone",
+      "perm": "0600"
+    }
+  ],
+  "permissions": [
+    {
+      "path": "/var/log/kolla",
+      "owner": "keystone:kolla"
+    },
+    {
+      "path": "/var/log/kolla/keystone/keystone.log",
+      "owner": "keystone:keystone"
+    },
+    {
+      "path": "/etc/keystone/fernet-keys",
+      "owner": "keystone:keystone",
+      "perm": "0770"
+    }
+  ]
+}
