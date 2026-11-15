@@ -8,6 +8,9 @@ NOTE: The state path is always hashed, so getting the state name of project from
 
 This backend saves the state file to a local directory.
 
+Each write replaces the state file atomically: the server writes a temporary file in the same directory and renames it to
+the state file. Symlinked state files are not supported, a write replaces the symlink with a regular file.
+
 ### Config
 
 Set `STORAGE_BACKEND` to `fs`.
