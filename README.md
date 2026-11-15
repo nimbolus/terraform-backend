@@ -68,6 +68,8 @@ The following table describes the default configuration, although the backend se
 
 The path to the state is: `/state/<project-id>/<state-name>`.
 
+A `DELETE` of a locked state is rejected with `423 Locked`, unless the request sends the ID of the current lock as `?ID=<lock-id>`. The deletion also removes the lock.
+
 ### Example Terraform backend configuration
 
 ```hcl

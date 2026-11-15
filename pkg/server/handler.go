@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
@@ -107,7 +108,7 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 		case http.MethodPost:
 			Post(w, r, state, body, locker, store, kms)
 		case http.MethodDelete:
-			Delete(w, r, state, store)
+			Delete(w, r, state, locker, store)
 		default:
 			log.Warnf("unknown method %s called", r.Method)
 			HTTPResponse(w, r, http.StatusNotImplemented, "Not implemented")
@@ -282,19 +283,61 @@ func saveState(state *terraform.State, store storage.Storage) error {
 	return store.SaveState(&terraform.State{ID: state.ID, Data: data})
 }
 
-func Delete(w http.ResponseWriter, r *http.Request, state *terraform.State, store storage.Storage) {
+// Delete removes the state. It takes the lock for the duration of the deletion, so that a state
+// can't be deleted while another client holds its lock, and releases it afterwards, so that no lock
+// is left behind for the deleted state. A client that holds the lock can delete the state by sending
+// its lock ID as ?ID=, which also releases its lock.
+func Delete(w http.ResponseWriter, r *http.Request, state *terraform.State, locker lock.Locker, store storage.Storage) {
 	log.Debugf("delete state with id %s", state.ID)
 
-	// The legacy copy first: reads fall back to it while the new ID is missing.
-	if err := deleteLegacyState(state, store); err != nil {
-		HTTPResponse(w, r, http.StatusInternalServerError, err.Error())
+	reqLockID := r.URL.Query().Get("ID")
+	state.Lock = terraform.LockInfo{
+		ID:        uuid.New().String(),
+		Operation: "OperationTypeDelete",
+		Who:       "terraform-backend",
+		Created:   time.Now().UTC().Format(time.RFC3339Nano),
+		Info:      "deleting state",
+	}
+
+	locked, err := locker.Lock(state)
+	if err != nil {
+		log.Errorf("failed to lock state with id %s for deletion: %v", state.ID, err)
+		HTTPResponse(w, r, http.StatusInternalServerError, "")
 		return
 	}
 
-	err := store.DeleteState(state.ID)
-	if err != nil {
-		log.Warnf("failed to delete state with id %s: %v", state.ID, err)
-		HTTPResponse(w, r, http.StatusInternalServerError, err.Error())
+	// a failed Lock() sets state.Lock to the current lock
+	if !locked && (reqLockID == "" || state.Lock.ID != reqLockID) {
+		log.Warnf("refusing to delete state with id %s, it is locked by %s", state.ID, state.Lock)
+
+		lockInfo, err := json.Marshal(state.Lock)
+		if err != nil {
+			log.Errorf("failed to marshal lock info: %v", err)
+			HTTPResponse(w, r, http.StatusInternalServerError, "")
+			return
+		}
+
+		HTTPResponse(w, r, http.StatusLocked, string(lockInfo))
+		return
+	}
+
+	// The legacy copy first: reads fall back to it while the new ID is missing. If it fails, the state is kept.
+	deleteErr := deleteLegacyState(state, store)
+	if deleteErr == nil {
+		deleteErr = store.DeleteState(state.ID)
+		if deleteErr != nil {
+			log.Warnf("failed to delete state with id %s: %v", state.ID, deleteErr)
+		}
+	}
+
+	if unlocked, err := locker.Unlock(state); err != nil || !unlocked {
+		log.Errorf("failed to release lock of state with id %s after deletion: unlocked=%t, err=%v", state.ID, unlocked, err)
+		HTTPResponse(w, r, http.StatusInternalServerError, "failed to release the lock")
+		return
+	}
+
+	if deleteErr != nil {
+		HTTPResponse(w, r, http.StatusInternalServerError, deleteErr.Error())
 		return
 	}
 
