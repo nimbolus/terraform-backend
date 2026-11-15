@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -13,6 +14,8 @@ import (
 )
 
 const Name = "s3"
+
+const objectSuffix = ".tfstate"
 
 type S3Storage struct {
 	client *minio.Client
@@ -81,6 +84,22 @@ func (s *S3Storage) DeleteState(id string) error {
 	return s.client.RemoveObject(context.Background(), s.bucket, getObjectName(id), minio.RemoveObjectOptions{})
 }
 
+func (s *S3Storage) ListStateIDs() ([]string, error) {
+	var ids []string
+
+	for obj := range s.client.ListObjects(context.Background(), s.bucket, minio.ListObjectsOptions{}) {
+		if obj.Err != nil {
+			return nil, obj.Err
+		}
+
+		if id, ok := strings.CutSuffix(obj.Key, objectSuffix); ok {
+			ids = append(ids, id)
+		}
+	}
+
+	return ids, nil
+}
+
 func getObjectName(id string) string {
-	return fmt.Sprintf("%s.tfstate", id)
+	return id + objectSuffix
 }

@@ -41,6 +41,9 @@ or use [docker-compose](./docker-compose.yml):
 docker-compose up -d
 ```
 
+Upgrading from a version before v0.3.0 needs downtime and a migration of the stored states, see
+[docs/migration.md](./docs/migration.md).
+
 ### Default settings
 
 The following table describes the default configuration, although the backend server will run with these values, it's not scalable and therefore only for testing purposes.
@@ -78,6 +81,9 @@ terraform {
   }
 }
 ```
+
+`lock_address` and `unlock_address` are required: the server rejects writes to a state that isn't locked, so runs with
+`-lock=false` can only read.
 
 For more information about username and password checkout [docs/auth.md](./docs/auth.md)
 

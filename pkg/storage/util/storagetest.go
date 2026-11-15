@@ -35,6 +35,20 @@ func StorageTest(t *testing.T, s storage.Storage) {
 	require.NoError(t, err)
 	require.Equal(t, state.Data, savedState.Data)
 
+	if l, ok := s.(storage.Lister); ok {
+		ids, err := l.ListStateIDs()
+		require.NoError(t, err)
+		require.Contains(t, ids, state.ID)
+	}
+
 	err = s.DeleteState(state.ID)
 	require.NoError(t, err)
+
+	if l, ok := s.(storage.Lister); ok {
+		ids, err := l.ListStateIDs()
+		require.NoError(t, err)
+		require.NotContains(t, ids, state.ID)
+	}
+
+	require.NoError(t, s.DeleteState(state.ID), "deleting a state that doesn't exist must succeed")
 }

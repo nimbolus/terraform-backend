@@ -88,12 +88,10 @@ func syncDir(path string) error {
 }
 
 func (f *FileSystemStorage) GetState(id string) (*terraform.State, error) {
-	if _, err := os.Stat(f.getFileName(id)); errors.Is(err, os.ErrNotExist) {
-		return nil, storage.ErrStateNotFound
-	}
-
 	d, err := os.ReadFile(f.getFileName(id))
-	if err != nil {
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, storage.ErrStateNotFound
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -103,28 +101,41 @@ func (f *FileSystemStorage) GetState(id string) (*terraform.State, error) {
 }
 
 func (f *FileSystemStorage) DeleteState(id string) error {
-	return os.Remove(f.getFileName(id))
+	if err := os.Remove(f.getFileName(id)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+
+	return nil
 }
 
 func (f *FileSystemStorage) getFileName(id string) string {
 	return fmt.Sprintf("%s/%s%s", f.directory, id, fileSuffix)
 }
 
+func (f *FileSystemStorage) ListStateIDs() ([]string, error) {
+	entries, err := os.ReadDir(f.directory)
+	if err != nil {
+		return nil, err
+	}
+
+	var ids []string
+
+	for _, e := range entries {
+		if id, ok := strings.CutSuffix(e.Name(), fileSuffix); ok && e.Type().IsRegular() {
+			ids = append(ids, id)
+		}
+	}
+
+	return ids, nil
+}
+
 // CountStoredObjects counts the state files. Temporary files of writes in progress, or left over from a crash, are not
 // counted.
 func (f *FileSystemStorage) CountStoredObjects() (int, error) {
-	entries, err := os.ReadDir(f.directory)
+	ids, err := f.ListStateIDs()
 	if err != nil {
 		return 0, err
 	}
 
-	count := 0
-
-	for _, e := range entries {
-		if strings.HasSuffix(e.Name(), fileSuffix) && e.Type().IsRegular() {
-			count++
-		}
-	}
-
-	return count, nil
+	return len(ids), nil
 }

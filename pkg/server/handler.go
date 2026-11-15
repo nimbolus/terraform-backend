@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,6 +19,7 @@ import (
 	"github.com/nimbolus/terraform-backend/pkg/lock"
 	"github.com/nimbolus/terraform-backend/pkg/storage"
 	"github.com/nimbolus/terraform-backend/pkg/terraform"
+	"github.com/nimbolus/terraform-backend/pkg/version"
 )
 
 func HTTPResponse(w http.ResponseWriter, r *http.Request, code int, body string) {
@@ -58,9 +60,10 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 
 		vars := mux.Vars(r)
 		state := &terraform.State{
-			ID:      terraform.GetStateID(vars["project"], vars["name"]),
-			Project: vars["project"],
-			Name:    vars["name"],
+			ID:       terraform.GetStateID(vars["project"], vars["name"]),
+			LegacyID: terraform.GetLegacyStateID(vars["project"], vars["name"]),
+			Project:  vars["project"],
+			Name:     vars["name"],
 		}
 
 		log.Infof("%s %s", r.Method, r.URL.Path)
@@ -96,7 +99,7 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 
 		switch r.Method {
 		case "LOCK":
-			Lock(w, r, state, body, locker)
+			Lock(w, r, state, body, locker, store)
 		case "UNLOCK":
 			Unlock(w, r, state, body, locker)
 		case http.MethodGet:
@@ -114,7 +117,7 @@ func StateHandler(store storage.Storage, locker lock.Locker, kms kms.KMS) func(h
 	}
 }
 
-func Lock(w http.ResponseWriter, r *http.Request, state *terraform.State, body []byte, locker lock.Locker) {
+func Lock(w http.ResponseWriter, r *http.Request, state *terraform.State, body []byte, locker lock.Locker, store storage.Storage) {
 	log.Debugf("try to lock state with id %s", state.ID)
 
 	if err := json.Unmarshal(body, &state.Lock); err != nil {
@@ -139,6 +142,10 @@ func Lock(w http.ResponseWriter, r *http.Request, state *terraform.State, body [
 		HTTPResponse(w, r, http.StatusLocked, string(lockInfo))
 	} else {
 		log.Debugf("state with id %s was locked successfully", state.ID)
+
+		// The lock is held, so no write can happen during the migration.
+		migrateLegacyState(state, store)
+
 		HTTPResponse(w, r, http.StatusOK, "")
 	}
 }
@@ -176,20 +183,20 @@ func Unlock(w http.ResponseWriter, r *http.Request, state *terraform.State, body
 
 func Get(w http.ResponseWriter, r *http.Request, state *terraform.State, store storage.Storage, kms kms.KMS) {
 	log.Debugf("get state with id %s", state.ID)
-	stateID := state.ID
-	state, err := store.GetState(state.ID)
+
+	data, err := readState(state, store)
 	if errors.Is(err, storage.ErrStateNotFound) {
-		log.Debugf("state with id %s does not exist", stateID)
+		log.Debugf("state with id %s does not exist", state.ID)
 		HTTPResponse(w, r, http.StatusNotFound, err.Error())
 		return
 	} else if err != nil {
-		log.Warnf("failed to get state with id %s: %v", stateID, err)
+		log.Warnf("failed to get state with id %s: %v", state.ID, err)
 		HTTPResponse(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	if kms != nil && len(state.Data) > 0 {
-		state.Data, err = kms.Decrypt(state.Data)
+	if kms != nil && len(data) > 0 {
+		data, err = kms.Decrypt(data)
 		if err != nil {
 			log.Errorf("failed to decrypt state with id %s: %v", state.ID, err)
 			HTTPResponse(w, r, http.StatusInternalServerError, "")
@@ -197,7 +204,34 @@ func Get(w http.ResponseWriter, r *http.Request, state *terraform.State, store s
 		}
 	}
 
-	HTTPResponse(w, r, http.StatusOK, string(state.Data))
+	HTTPResponse(w, r, http.StatusOK, string(data))
+}
+
+// readState returns the encrypted data of the state. States that weren't written since v0.3.0 are read from their
+// legacy ID.
+func readState(state *terraform.State, store storage.Storage) ([]byte, error) {
+	stored, err := store.GetState(state.ID)
+	if errors.Is(err, storage.ErrStateNotFound) && state.LegacyID != "" {
+		data, legacyErr := readLegacyState(state, store)
+		if !errors.Is(legacyErr, storage.ErrStateNotFound) {
+			return data, legacyErr
+		}
+
+		// A migration between the two reads moved the state to its new ID. The migration saves the new ID before it
+		// deletes the legacy copy, so it's there now.
+		stored, err = store.GetState(state.ID)
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	s, err := terraform.UnmarshalStoredState(stored.Data, state)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.Data, nil
 }
 
 func Post(w http.ResponseWriter, r *http.Request, state *terraform.State, body []byte, locker lock.Locker, store storage.Storage, kms kms.KMS) {
@@ -218,27 +252,44 @@ func Post(w http.ResponseWriter, r *http.Request, state *terraform.State, body [
 
 	log.Debugf("save state with id %s", state.ID)
 
-	data, err := kms.Encrypt(body)
+	state.Data, err = kms.Encrypt(body)
 	if err != nil {
 		log.Errorf("failed to encrypt state with id %s: %v", state.ID, err)
 		HTTPResponse(w, r, http.StatusInternalServerError, "")
 		return
 	}
 
-	state.Data = data
-
-	err = store.SaveState(state)
+	err = saveState(state, store)
 	if err != nil {
 		log.Warnf("failed to save state with id %s: %v", state.ID, err)
 		HTTPResponse(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
+	// The lock migrates legacy states, this only cleans up if that failed. A failure is logged, the new ID is read first.
+	_ = deleteLegacyState(state, store)
+
 	HTTPResponse(w, r, http.StatusOK, "")
+}
+
+// saveState stores the encrypted data of the state with its metadata.
+func saveState(state *terraform.State, store storage.Storage) error {
+	data, err := terraform.MarshalStoredState(state, version.Get(), time.Now())
+	if err != nil {
+		return fmt.Errorf("encoding state: %w", err)
+	}
+
+	return store.SaveState(&terraform.State{ID: state.ID, Data: data})
 }
 
 func Delete(w http.ResponseWriter, r *http.Request, state *terraform.State, store storage.Storage) {
 	log.Debugf("delete state with id %s", state.ID)
+
+	// The legacy copy first: reads fall back to it while the new ID is missing.
+	if err := deleteLegacyState(state, store); err != nil {
+		HTTPResponse(w, r, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	err := store.DeleteState(state.ID)
 	if err != nil {

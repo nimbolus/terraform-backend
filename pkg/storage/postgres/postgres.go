@@ -74,6 +74,27 @@ func (p *PostgresStorage) GetState(id string) (*terraform.State, error) {
 	return s, nil
 }
 
+func (p *PostgresStorage) ListStateIDs() ([]string, error) {
+	rows, err := p.db.Query(`SELECT state_id FROM ` + p.table)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close() // nolint: errcheck
+
+	var ids []string
+
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	return ids, rows.Err()
+}
+
 func (p *PostgresStorage) DeleteState(id string) error {
 	return p.db.QueryRow(`DELETE FROM `+p.table+` WHERE state_id = $1`, id).Err()
 }
