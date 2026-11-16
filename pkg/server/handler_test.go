@@ -83,7 +83,7 @@ func TestServerHandler_VerifyLockOnPush(t *testing.T) {
 		terraformOptions := terraformOptions(t, "./handler_test", address)
 		terraformOptions.Lock = doLock
 
-		_, err = terraform.InitAndApplyE(t, terraformOptions)
+		_, err = terraform.InitAndApplyContextE(t, t.Context(), terraformOptions)
 		if err == nil {
 			t.Fatal("expected error")
 		}
@@ -104,21 +104,21 @@ func TestServerHandler(t *testing.T) {
 	terraformOptions := terraformOptions(t, "./handler_test", address)
 
 	// Clean up resources with "terraform destroy" at the end of the test.
-	defer terraform.Destroy(t, terraformOptions)
+	defer terraform.DestroyContext(t, t.Context(), terraformOptions)
 
 	// Run "terraform init" and "terraform apply". Fail the test if there are any errors.
-	terraform.InitAndApply(t, terraformOptions)
+	terraform.InitAndApplyContext(t, t.Context(), terraformOptions)
 
 	simulateLock(t, address, true)
 
-	_, err = terraform.ApplyE(t, terraformOptions)
+	_, err = terraform.ApplyContextE(t, t.Context(), terraformOptions)
 	if err == nil {
 		t.Fatal("expected error")
 	}
 
 	simulateLock(t, address, false)
 
-	terraform.ApplyAndIdempotent(t, terraformOptions)
+	terraform.ApplyAndIdempotentContext(t, t.Context(), terraformOptions)
 
 	if err := os.Remove("./handler_test/errored.tfstate"); err != nil {
 		t.Fatal(err)
@@ -136,11 +136,11 @@ func TestServerHandler_ForceUnlock_Enabled(t *testing.T) {
 
 	terraformOptions := terraformOptions(t, "./handler_test", address)
 
-	terraform.Init(t, terraformOptions)
+	terraform.InitContext(t, t.Context(), terraformOptions)
 
 	simulateLock(t, address, true)
 
-	if _, err := terraform.RunTerraformCommandE(t, terraformOptions, "force-unlock", "-force", "cf290ef3-6090-410e-9784-d017a4b1536a"); err != nil {
+	if _, err := terraform.RunTerraformCommandContextE(t, t.Context(), terraformOptions, "force-unlock", "-force", "cf290ef3-6090-410e-9784-d017a4b1536a"); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -156,11 +156,11 @@ func TestServerHandler_ForceUnlock_Disabled(t *testing.T) {
 
 	terraformOptions := terraformOptions(t, "./handler_test", address)
 
-	terraform.Init(t, terraformOptions)
+	terraform.InitContext(t, t.Context(), terraformOptions)
 
 	simulateLock(t, address, true)
 
-	if _, err := terraform.RunTerraformCommandE(t, terraformOptions, "force-unlock", "-force", "cf290ef3-6090-410e-9784-d017a4b1536a"); err == nil {
+	if _, err := terraform.RunTerraformCommandContextE(t, t.Context(), terraformOptions, "force-unlock", "-force", "cf290ef3-6090-410e-9784-d017a4b1536a"); err == nil {
 		t.Fatal("expected error")
 	}
 

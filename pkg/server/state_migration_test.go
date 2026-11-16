@@ -37,7 +37,7 @@ func TestStateMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := terraform.InitAndApplyE(t, terraformOptions); err != nil {
+	if _, err := terraform.InitAndApplyContextE(t, t.Context(), terraformOptions); err != nil {
 		t.Fatal(err)
 	}
 
@@ -49,7 +49,7 @@ func TestStateMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := terraform.InitAndApplyE(t, terraformOptions); err != nil {
+	if _, err := terraform.InitAndApplyContextE(t, t.Context(), terraformOptions); err != nil {
 		t.Fatal(err)
 	}
 
@@ -60,12 +60,12 @@ func TestStateMigration(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if _, err := terraform.InitAndApplyE(t, terraformOptions); err != nil {
+	if _, err := terraform.InitAndApplyContextE(t, t.Context(), terraformOptions); err != nil {
 		t.Fatal(err)
 	}
 
 	// destroy
-	if _, err := terraform.DestroyE(t, terraformOptions); err != nil {
+	if _, err := terraform.DestroyContextE(t, t.Context(), terraformOptions); err != nil {
 		t.Fatal(err)
 	}
 
