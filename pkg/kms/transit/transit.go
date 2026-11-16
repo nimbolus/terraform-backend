@@ -36,6 +36,9 @@ func (v *VaultTransit) Encrypt(d []byte) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to seal with transit engine: %v", err)
 	}
+	if res == nil {
+		return nil, fmt.Errorf("failed to seal with transit engine: empty response")
+	}
 
 	ciphertext, ok := res.Data["ciphertext"].(string)
 	if !ok {
@@ -46,6 +49,10 @@ func (v *VaultTransit) Encrypt(d []byte) ([]byte, error) {
 }
 
 func (v *VaultTransit) Decrypt(d []byte) ([]byte, error) {
+	if len(d) == 0 {
+		return nil, fmt.Errorf("failed to unseal with transit engine: empty ciphertext")
+	}
+
 	params := map[string]any{
 		"ciphertext": string(d),
 	}
@@ -53,6 +60,9 @@ func (v *VaultTransit) Decrypt(d []byte) ([]byte, error) {
 	res, err := v.client.Logical().Write(path, params)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unseal with transit engine: %v", err)
+	}
+	if res == nil {
+		return nil, fmt.Errorf("failed to unseal with transit engine: empty response")
 	}
 
 	plaintext, ok := res.Data["plaintext"].(string)

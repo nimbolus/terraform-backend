@@ -50,6 +50,9 @@ func (k *KMS) Encrypt(d []byte) ([]byte, error) {
 
 func (k *KMS) Decrypt(d []byte) ([]byte, error) {
 	nonceSize := k.cipher.NonceSize()
+	if len(d) < nonceSize+k.cipher.Overhead() {
+		return nil, fmt.Errorf("failed to unseal with local KMS: ciphertext too short (%d bytes)", len(d))
+	}
 	nonce, ciphertext := d[:nonceSize], d[nonceSize:]
 
 	plaintext, err := k.cipher.Open(nil, nonce, ciphertext, nil)
