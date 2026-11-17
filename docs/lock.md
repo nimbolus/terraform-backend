@@ -10,6 +10,18 @@ This is the simplest implementation by using a local Golang map and doesn't requ
 
 Set `LOCK_BACKEND` to `local`.
 
+## Local Files
+
+This backend keeps each lock in a file in a local directory, so that a lock stays when the Terraform backend server restarts or crashes. A lock file is replaced atomically. It doesn't require an external service, but like the local map it only works for a standalone, single-instance Terraform backend server: the mutex is in the process, so two servers on the same directory can both get a lock.
+
+### Config
+
+Set `LOCK_BACKEND` to `file`.
+
+| Environment Variable | Type   | Default   | Description                                 |
+|----------------------|--------|-----------|---------------------------------------------|
+| LOCK_FILE_DIR        | string | `./locks` | The directory used for storing lock files   |
+
 ## Redis
 
 This backend uses an external Redis server to lock the states. It's scalable and can be used also with multiple Terraform backend server instances.
